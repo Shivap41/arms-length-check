@@ -1,6 +1,6 @@
 /** Fictional research-session fixtures. DOIs and ORCIDs must never be queried as real identifiers. */
 export type DemoStatus = "Conflict" | "Potential" | "Insufficient data" | "No conflict found";
-export type DemoPaper = { title: string; year: number; doi: string; authorCount?: number; authorLabel?: string; authorIdMissing?: boolean };
+export type DemoPaper = { title: string; year: number; doi: string; venue: string; authorCount: number; authorLabel?: string; authorIdMissing?: boolean };
 export type DemoProfile = { id: string; displayName: string; currentInstitution: string; currentSince: number; currentUntil?: number; pastInstitutions: { institution: string; fromYear: number; toYear: number }[]; topics: [string, string, string]; worksCount: number; orcid: string | null; recentPapers: [DemoPaper, DemoPaper, DemoPaper] };
 export type DemoResult = { status: DemoStatus; rule: "R1" | "R2" | "R3" | "R5" | null; explanation: string; sharedPapers: DemoPaper[]; wrongPerson: boolean; note?: { text: string; collapsed: boolean }; employment?: { source: "ORCID employment"; institution: string; endYear: null }; declaredRelationship?: "Former PhD advisor" };
 export type DemoAnswer = { action: "select-profiles"; profileIds: string[] } | { action: "paste-orcid"; orcid: string } | { action: "cant-tell" };
@@ -8,7 +8,7 @@ export type DemoReviewer = { id: string; typedName: string; typedInstitution: st
 export type DemoScenario = { caseId: string; fictional: true; candidate: DemoProfile & { confirmed: true; coauthoredPercent: number }; reviewers: DemoReviewer[] };
 
 let paperNumber = 1;
-function paper(title: string, year: number, extra: Partial<DemoPaper> = {}): DemoPaper { return { title, year, doi: `10.5555/demo.${String(paperNumber++).padStart(4, "0")}`, ...extra }; }
+function paper(title: string, year: number, extra: Partial<DemoPaper> = {}): DemoPaper { return { title, year, doi: `10.5555/demo.${String(paperNumber++).padStart(4, "0")}`, venue: "Journal of Molecular Research (fictional)", authorCount: 6, ...extra }; }
 const topicSets = {
   glycan: ["chemical biology", "glycobiology", "glycan imaging probes"],
   civil: ["civil engineering", "structural mechanics", "concrete durability"],

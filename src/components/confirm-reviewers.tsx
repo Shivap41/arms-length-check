@@ -8,10 +8,10 @@ function ProfileDetails({ profile }: { profile: IdentityProfile }) {
   return <><h3>{profile.displayName}</h3><p className="profile-institution">{profile.currentInstitution}<span>{profile.currentSince}–{profile.currentUntil ?? "present"}</span></p>{profile.pastInstitutions.length > 0 && <p className="profile-past">{profile.pastInstitutions.map(past => `${past.institution} · ${past.fromYear}–${past.toYear}`).join("; ")}</p>}<div className="profile-topics">{profile.topics.map(topic => <span key={topic}>{topic}</span>)}</div><p className="profile-works">{profile.worksCount} works</p><ol className="profile-papers">{profile.recentPapers.map(paper => <li key={paper.doi}><span>{paper.year}</span>{paper.title}</li>)}</ol><span className="profile-pick">This is the person</span></>;
 }
 
-export function ConfirmReviewers({ screeningId, caseId }: { screeningId: string; caseId: string }) {
+export function ConfirmReviewers({ screeningId, caseId, reviewerId }: { screeningId: string; caseId: string; reviewerId: string | undefined }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState(() => getIdentityReviews(screeningId));
-  const [openId, setOpenId] = useState(() => getIdentityReviews(screeningId).find(row => row.status === "needs-you")?.reviewer.id);
+  const [openId, setOpenId] = useState(() => reviewerId ?? getIdentityReviews(screeningId).find(row => row.status === "needs-you")?.reviewer.id);
   const [merge, setMerge] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [paste, setPaste] = useState("");

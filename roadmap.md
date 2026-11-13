@@ -18,3 +18,8 @@
 - [x] Add ordered reviewer rows, profile selection, profile merging, paste, and undo.
 - [x] Add keyboard controls, live progress, and a gated results-step destination.
 - [x] Test identity changes and verify the full 15-reviewer flow at desktop widths.
+
+# Review results
+- [x] Add sorted, filterable results and expandable evidence.
+- [x] Add name-only match decisions and targeted identity changes.
+- [x] Verify counts, evidence, and updated outcomes through the full screening flow.

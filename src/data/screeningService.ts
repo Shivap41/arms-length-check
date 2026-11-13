@@ -25,6 +25,10 @@ export type IdentityChoice = "confirmed" | "not-a-match" | "unsure" | "undo" | "
 export type ScreeningDecision = "invite" | "exclude" | "needs-review";
 export type Screening = { id: string; caseId: string; reviewers: Reviewer[]; identityChoices: Record<string, IdentityChoice>; identitySources: Record<string, "orcid" | "chair">; decisions: Record<string, ScreeningDecision>; results: Record<string, DemoResult>; resultsReady: boolean };
 export type IdentityProfile = DemoProfile;
+export type ResultStatus = DemoResult["status"];
+export type ResultPaper = DemoResult["sharedPapers"][number];
+export type ResultRow = { reviewer: Reviewer; result: DemoResult; source: "ORCID" | "You"; reason: string; profiles: IdentityProfile[]; candidateProfile: IdentityProfile; decoyPapers: ResultPaper[]; nameMatch: "confirmed" | "different" | undefined };
+export const resultStatuses: ResultStatus[] = ["Conflict", "Potential", "Insufficient data", "No conflict found"];
 export type IdentityReview = { reviewer: Reviewer; brief: string; options: IdentityProfile[]; matchedProfiles: IdentityProfile[]; status: "needs-you" | "orcid" | "chair" | "cant-tell"; selectedIds: string[] };
 type IdentityHistory = { reviewerId: string; choice: IdentityChoice | undefined; source: "orcid" | "chair" | undefined; result: DemoResult | undefined };
 
@@ -33,6 +37,7 @@ const caseRecord: CaseRecord = { id: "ortiz-2027", title: "Tenure review — Dr.
 let reviewers: Reviewer[] = [];
 const screenings = new Map<string, Screening>();
 const identityHistory = new Map<string, IdentityHistory[]>();
+const nameMatches = new Map<string, Record<string, "confirmed" | "different">>();
 let sequence = 0;
 const identifier = z.string().trim().min(1).max(150);
 function requireCase(caseId: string) {
@@ -138,6 +143,8 @@ export function confirmIdentity(screeningId: string, nameId: string, choice: Ide
   } else resolved = { status: "Insufficient data", rule: null, explanation: "Identity not confirmed", sharedPapers: [], wrongPerson: false };
   history.push({ reviewerId: nameId, choice: screening.identityChoices[nameId], source: screening.identitySources[nameId], result: screening.results[nameId] });
   identityHistory.set(screeningId, history);
+  const matches = nameMatches.get(screeningId);
+  if (matches) delete matches[nameId];
   screening.resultsReady = false;
   if (parsed === "undo") {
     delete screening.identityChoices[nameId]; delete screening.identitySources[nameId]; delete screening.results[nameId];
@@ -178,6 +185,36 @@ export function undoLastIdentity(screeningId: string): string | undefined {
   return last.reviewerId;
 }
 export function hasIdentityUndo(screeningId: string): boolean { return Boolean(identityHistory.get(screeningId)?.length); }
+export function confirmNameMatch(screeningId: string, reviewerId: string, choice: "confirmed" | "different"): void {
+  const screening = requireScreening(screeningId, reviewerId);
+  const parsed = z.enum(["confirmed", "different"]).parse(choice);
+  const current = screening.results[reviewerId];
+  if (!screening.resultsReady || !current?.sharedPapers.some(paper => paper.authorIdMissing)) throw new Error("No name-only paper match to review.");
+  const matches = nameMatches.get(screeningId) ?? {};
+  matches[reviewerId] = parsed; nameMatches.set(screeningId, matches);
+  screening.results[reviewerId] = { ...current, status: parsed === "confirmed" ? "Conflict" : "No conflict found", rule: parsed === "confirmed" ? "R1" : null, explanation: parsed === "confirmed" ? "Co-wrote 1 paper with the candidate (2022)" : "The name-only paper belongs to a different person." };
+}
+export function getResultRows(screening: Screening): ResultRow[] {
+  const identities = getIdentityReviews(screening.id);
+  return screening.reviewers.flatMap(reviewer => {
+    const result = screening.results[reviewer.id];
+    if (!result) return [];
+    const identity = identities.find(row => row.reviewer.id === reviewer.id);
+    const demo = findDemoReviewer(reviewer);
+    let reason = result.explanation;
+    if (result.employment) reason = `Same current institution: ${result.employment.institution}`;
+    else if (result.declaredRelationship) reason = "Declared by the candidate: former PhD advisor";
+    else if (result.sharedPapers.some(paper => paper.authorIdMissing) && result.status === "Potential") reason = "Same name on a shared paper — check it's this person";
+    else if (result.sharedPapers.some(paper => paper.authorCount === 120)) reason = "Large team paper (120 authors, 2024)";
+    else if (result.sharedPapers.length && result.status !== "No conflict found") reason = `Co-wrote ${result.sharedPapers.length} paper${result.sharedPapers.length === 1 ? "" : "s"} with the candidate (${result.sharedPapers.map(paper => paper.year).join(", ")})`;
+    return [{ reviewer, result, source: screening.identitySources[reviewer.id] === "orcid" ? "ORCID" as const : "You" as const, reason, profiles: identity?.matchedProfiles ?? [], candidateProfile: structuredClone(demoScenario.candidate), decoyPapers: result.note && demo ? structuredClone(demo.resultsByChoice["R7-b"]?.sharedPapers ?? []) : [], nameMatch: nameMatches.get(screening.id)?.[reviewer.id] }];
+  }).sort((a, b) => resultStatuses.indexOf(a.result.status) - resultStatuses.indexOf(b.result.status));
+}
+export function countResults(rows: ResultRow[]): Record<ResultStatus, number> {
+  const counts: Record<ResultStatus, number> = { Conflict: 0, Potential: 0, "Insufficient data": 0, "No conflict found": 0 };
+  for (const row of rows) counts[row.result.status]++;
+  return counts;
+}
 export function recordDecision(screeningId: string, nameId: string, decision: ScreeningDecision): void { const screening = requireScreening(screeningId, nameId); screening.decisions[nameId] = z.enum(["invite", "exclude", "needs-review"]).parse(decision); }
 export function loadDemoReviewers(caseId: string): { loaded: boolean; message: string } {
   browserOnly(); requireCase(caseId);

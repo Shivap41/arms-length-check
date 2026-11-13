@@ -1,0 +1,50 @@
+import { Fragment, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Check, ChevronDown, ChevronRight, ExternalLink, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { confirmNameMatch, countResults, getResultRows, getScreening, resultStatuses, type ResultPaper, type ResultRow, type ResultStatus, type Screening } from "@/data/screeningService";
+
+const statusClasses: Record<ResultStatus, string> = { Conflict: "status-conflict", Potential: "status-potential", "Insufficient data": "status-insufficient", "No conflict found": "status-clear" };
+function PaperEvidence({ paper, notCounted = false }: { paper: ResultPaper; notCounted?: boolean }) {
+  return <li className="evidence-paper"><strong>{paper.title}</strong><p>{paper.year} · {paper.venue} · {paper.authorCount} authors{notCounted && <span className="not-counted">Not counted</span>}</p><a className="doi-link" href={`https://doi.org/${encodeURIComponent(paper.doi).replace(/%2F/g, "/")}`} target="_blank" rel="noopener noreferrer">{paper.doi}<ExternalLink /></a></li>;
+}
+function Evidence({ row, onNameMatch }: { row: ResultRow; onNameMatch: (choice: "confirmed" | "different") => void }) {
+  const result = row.result;
+  const nameOnly = result.sharedPapers.some(paper => paper.authorIdMissing);
+  const rule = result.rule === "R1" ? "R1: co-authored in the last 5 years → Conflict" : result.rule === "R2" ? "R2: older co-authorship → Potential" : result.rule === "R3" ? "R3: same current institution → Conflict" : result.rule === "R5" ? "R5: declared former PhD advisor → Conflict" : undefined;
+  return <div className="result-evidence" id={`evidence-${row.reviewer.id}`}>
+    <h3>Evidence</h3>
+    {result.sharedPapers.length > 0 && <ul className="evidence-papers">{result.sharedPapers.map(paper => <PaperEvidence key={paper.doi} paper={paper} notCounted={row.nameMatch === "different"} />)}</ul>}
+    {rule && <p className="evidence-rule">{rule}</p>}
+    {result.employment && <><dl className="employment-evidence"><div><dt>Candidate</dt><dd>{row.candidateProfile.displayName} · {row.candidateProfile.currentInstitution} · {row.candidateProfile.currentSince}–present</dd></div><div><dt>Reviewer</dt><dd>{row.profiles[0]?.displayName ?? row.reviewer.name} · {result.employment.institution} · {row.profiles[0]?.currentSince ?? "Start year not available"}–present</dd></div></dl><p className="evidence-source">ORCID employment, current · no end date</p></>}
+    {result.declaredRelationship && <blockquote className="candidate-statement">Candidate's statement: “Marco Bianchi was my PhD advisor.”<cite>Dr. Maya Ortiz · candidate declaration (fictional)</cite></blockquote>}
+    {nameOnly && <div className="name-match-evidence"><p>Byline exactly as printed: <strong>“{result.sharedPapers.find(paper => paper.authorIdMissing)?.authorLabel}”</strong> · no author ID</p><div><Button variant={row.nameMatch === "confirmed" ? "default" : "outline"} aria-pressed={row.nameMatch === "confirmed"} onClick={() => onNameMatch("confirmed")}><Check />This is them</Button><Button variant="outline" aria-pressed={row.nameMatch === "different"} onClick={() => onNameMatch("different")}><X />Different person</Button></div></div>}
+    {result.sharedPapers.some(paper => paper.authorCount === 120) && <p className="evidence-source">Large-team co-authorship is flagged as Potential for the chair to assess.</p>}
+    {result.status === "No conflict found" && <p className="result-help">No shared papers or institutions found in public data. This is not proof of independence.</p>}
+    {result.status === "Insufficient data" && <><p>{result.explanation}</p><p className="result-help">Ask the reviewer to confirm independence or add their ORCID.</p></>}
+    {result.note && <details className="decoy-evidence"><summary>Different person with the same name</summary><p>{result.note.text}</p><ul className="evidence-papers">{row.decoyPapers.map(paper => <PaperEvidence key={paper.doi} paper={paper} notCounted />)}</ul></details>}
+    <p className="fictional-evidence-note">Fictional demo evidence · DOI links do not identify real publications.</p>
+  </div>;
+}
+export function ReviewResults({ initialScreening }: { initialScreening: Screening }) {
+  const [screening, setScreening] = useState(initialScreening);
+  const [filter, setFilter] = useState<ResultStatus>();
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const rows = getResultRows(screening);
+  const counts = countResults(rows);
+  const visible = filter ? rows.filter(row => row.result.status === filter) : rows;
+  function nameMatch(reviewerId: string, choice: "confirmed" | "different") {
+    confirmNameMatch(screening.id, reviewerId, choice);
+    const updated = getScreening(screening.id);
+    if (updated) setScreening(updated);
+  }
+  return <>
+    <div className="summary-band results-summary" aria-label="Result summary">{resultStatuses.map(status => <Button variant="outline" className={`result-summary-card ${statusClasses[status]}`} key={status} aria-pressed={filter === status} aria-label={`Filter ${status}: ${counts[status]}`} onClick={() => setFilter(filter === status ? undefined : status)}><span className="result-summary-title">{status}</span><span className="result-summary-count">{counts[status]}</span></Button>)}</div>
+    <div className="results-heading"><h2 className="identity-section-title">{filter ?? "All reviewers"}</h2><span role="status">{visible.length} of {rows.length} reviewers</span>{filter && <Button variant="link" onClick={() => setFilter(undefined)}>Clear filter<X /></Button>}</div>
+    <div className="results-table-scroll"><table className="results-table"><caption className="sr-only">Reviewer conflict screening results</caption><thead><tr><th>Reviewer</th><th>Result</th><th>Reason</th><th>Evidence</th></tr></thead><tbody>{visible.map(row => {
+      const open = expanded.includes(row.reviewer.id);
+      return <Fragment key={row.reviewer.id}><tr className="result-row" data-reviewer-id={row.reviewer.id}><td><strong>{row.reviewer.name}</strong><span className="result-institution">{row.reviewer.institution}</span><span className="result-identity-source">Identity: {row.source}</span><Button variant="link" asChild className="change-result-identity"><Link to="/cases/$caseId/screening" params={{ caseId: screening.caseId }} search={{ screeningId: screening.id, reviewerId: row.reviewer.id }}>Change identity</Link></Button></td><td><span className={`result-chip ${statusClasses[row.result.status]}`}>{row.result.status}</span></td><td>{row.reason}{row.result.status === "No conflict found" && <p className="result-help">No shared papers or institutions found in public data. This is not proof of independence.</p>}{row.result.status === "Insufficient data" && <p className="result-help">Ask the reviewer to confirm independence or add their ORCID.</p>}</td><td><Button variant="link" className="evidence-toggle" aria-expanded={open} aria-controls={`evidence-${row.reviewer.id}`} onClick={() => setExpanded(open ? expanded.filter(id => id !== row.reviewer.id) : [...expanded, row.reviewer.id])}>{open ? "Hide evidence" : "Show evidence"}{open ? <ChevronDown /> : <ChevronRight />}</Button></td></tr>{open && <tr className="evidence-row"><td colSpan={4}><Evidence row={row} onNameMatch={choice => nameMatch(row.reviewer.id, choice)} /></td></tr>}</Fragment>;
+    })}{!visible.length && <tr><td colSpan={4} className="results-empty">No reviewers with this result.</td></tr>}</tbody></table></div>
+    <p className="results-footer-note">Results are based on public publication data and the candidate's declarations. The tool flags; the chair decides.</p>
+  </>;
+}
