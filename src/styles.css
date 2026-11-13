@@ -69,8 +69,8 @@
   --header-hover: oklch(0.319039 0.061785 251.8120);
   --sidebar: oklch(0.976139 0.000000 89.8756);
   --profile-strip: oklch(0.450991 0.092562 244.2812);
-  --contact: oklch(0.630415 0.101306 183.0314);
-  --contact-hover: oklch(0.558463 0.089814 182.0822);
+  --contact: oklch(0.52 0.09 183);
+  --contact-hover: oklch(0.46 0.08 183);
   --destructive: oklch(0.500336 0.182051 29.5127);
   --destructive-foreground: oklch(0.972451 0.011947 23.7032);
   --conflict: oklch(0.500336 0.182051 29.5127);
@@ -345,7 +345,7 @@
 .candidate-declarations p { color: var(--muted-foreground); font-size: 13px; margin: 14px 0 0; }
 .decision-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
 .decision-toolbar > span { font-weight: 500; }
-.results-table { min-width: 900px; }
+.results-table { min-width: 0; }
 .results-table th:first-child { width: 23%; }
 .results-table th:nth-child(2) { width: 17%; }
 .results-table th:nth-child(3) { width: 25%; }
