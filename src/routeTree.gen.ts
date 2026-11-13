@@ -16,6 +16,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
+import { Route as CasesCaseIdScreeningRouteImport } from './routes/cases.$caseId_.screening'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
   path: '/$caseId',
   getParentRoute: () => CasesRoute,
 } as any)
+const CasesCaseIdScreeningRoute = CasesCaseIdScreeningRouteImport.update({
+  id: '/$caseId_/screening',
+  path: '/$caseId/screening',
+  getParentRoute: () => CasesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases/': typeof CasesIndexRoute
+  '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases': typeof CasesIndexRoute
+  '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases/': typeof CasesIndexRoute
+  '/cases/$caseId_/screening': typeof CasesCaseIdScreeningRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/cases/$caseId'
     | '/cases/'
+    | '/cases/$caseId/screening'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/cases/$caseId'
     | '/cases'
+    | '/cases/$caseId/screening'
   id:
     | '__root__'
     | '/'
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/cases/$caseId'
     | '/cases/'
+    | '/cases/$caseId_/screening'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -168,17 +180,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CasesCaseIdRouteImport
       parentRoute: typeof CasesRoute
     }
+    '/cases/$caseId_/screening': {
+      id: '/cases/$caseId_/screening'
+      path: '/$caseId/screening'
+      fullPath: '/cases/$caseId/screening'
+      preLoaderRoute: typeof CasesCaseIdScreeningRouteImport
+      parentRoute: typeof CasesRoute
+    }
   }
 }
 
 interface CasesRouteChildren {
   CasesCaseIdRoute: typeof CasesCaseIdRoute
   CasesIndexRoute: typeof CasesIndexRoute
+  CasesCaseIdScreeningRoute: typeof CasesCaseIdScreeningRoute
 }
 
 const CasesRouteChildren: CasesRouteChildren = {
   CasesCaseIdRoute: CasesCaseIdRoute,
   CasesIndexRoute: CasesIndexRoute,
+  CasesCaseIdScreeningRoute: CasesCaseIdScreeningRoute,
 }
 
 const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)

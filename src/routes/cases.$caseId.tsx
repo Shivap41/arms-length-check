@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeading } from "@/components/faculty-shell";
+import { useEffect, useState } from "react";
+import { Check, ChevronRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ExternalEvaluations } from "@/components/external-evaluations";
+import { getCase, type CaseRecord } from "@/data/screeningService";
 
 export const Route = createFileRoute("/cases/$caseId")({
   head: ({ params }) => ({ meta: [
@@ -15,6 +20,13 @@ export const Route = createFileRoute("/cases/$caseId")({
 
 function CaseDetail() {
   const { caseId } = Route.useParams();
-  if (caseId !== "ortiz-2027") return <><PageHeading title="Case unavailable" /><Link to="/cases" className="text-primary">Back to cases</Link></>;
-  return <><PageHeading title="Tenure review" /><Link to="/cases" className="back-link">Back to cases</Link><section className="case-overview"><h2>Dr. Maya Ortiz</h2><p>Chemistry</p><dl><div><dt>Case</dt><dd>ortiz-2027</dd></div><div><dt>Review type</dt><dd>Tenure review</dd></div></dl></section></>;
+  const [caseRecord, setCaseRecord] = useState<CaseRecord>();
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setCaseRecord(getCase(caseId)); setLoaded(true); }, [caseId]);
+  if (!loaded) return <p role="status">Loading case…</p>;
+  if (!caseRecord) return <><PageHeading title="Case unavailable" /><Link to="/cases" className="text-primary">Back to cases</Link></>;
+  return <><header className="case-header"><h1>{caseRecord.title}</h1><p>{caseRecord.subtitle}</p></header>
+    <ol className="case-steps" aria-label="Review progress">{["Packet submitted", "External evaluations", "Department vote", "College review", "Decision"].map((step, index) => <li key={step} className={index === 0 ? "step-done" : index === 1 ? "step-current" : ""} aria-current={index === 1 ? "step" : undefined}><span className="step-symbol">{index === 0 ? <Check /> : index + 1}</span><span>{step}</span>{index < 4 && <ChevronRight className="step-arrow" />}</li>)}</ol>
+    <Tabs defaultValue="External evaluations"><TabsList className="case-tabs">{["Overview", "Packet", "External evaluations", "Committee", "Decision"].map(tab => <TabsTrigger className="case-tab" value={tab} key={tab}>{tab}</TabsTrigger>)}</TabsList><TabsContent value="External evaluations"><ExternalEvaluations key={caseRecord.id} caseRecord={caseRecord} /></TabsContent>{["Overview", "Packet", "Committee", "Decision"].map(tab => <TabsContent value={tab} key={tab}><p className="prototype-unavailable">Not part of this prototype</p></TabsContent>)}</Tabs>
+  </>;
 }

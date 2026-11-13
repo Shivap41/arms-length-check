@@ -12,6 +12,10 @@ describe("App routing", () => {
     expect(router.matchRoutes("/cases").at(-1)?.routeId).toBe("/cases/");
     expect(router.matchRoutes("/cases/ortiz-2027").at(-1)?.params).toEqual({ caseId: "ortiz-2027" });
   });
+  it("matches the unnested screening page", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes("/cases/ortiz-2027/screening").at(-1)?.routeId).toBe("/cases/$caseId_/screening");
+  });
   it("matches a page for / instead of falling back to not found", () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 
