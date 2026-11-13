@@ -15,6 +15,13 @@
       "when": 1794537219165,
       "tag": "0001_add_check_events",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794538249874,
+      "tag": "0002_create_live_mode_tables",
+      "breakpoints": true
     }
   ]
 }

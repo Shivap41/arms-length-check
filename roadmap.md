@@ -34,3 +34,9 @@
 
 ## Live-feeling checks
 - [x] Seeded latency setting, early checks, skeletons, progress screen, failure + retry, wait logging
+
+# Live mode
+- [x] Demo/Live data mode with a Cases toggle; session mode always uses the demo.
+- [x] Live case tables with per-user access rules; sign-in (Google, Lovable) and protected live routes.
+- [x] New live case form, live reviewers and paste list, declarations form, candidate confirmation.
+- [ ] Live conflict checking via OpenAlex/ORCID calls and the API cache (next step).

@@ -43,3 +43,4 @@ use the editor.
 - Generate audit downloads as escaped standalone HTML from the service snapshot, keeping exports usable offline without server dependencies.
 - Research-session logging writes anonymous, insert-only rows from the browser through a background queue in src/lib/research-session.ts so it never blocks the UI; results are read only by a passcode-checked server function and computed by pure helpers in src/lib/session-metrics.ts.
 - Simulated check latency, stages, profile-search waits and failures live only in screeningService.ts (runCheck/searchProfiles); components subscribe via subscribeChecks so a real backend can replace the timing without UI changes.
+- Live mode lives alongside the demo: screeningService.ts owns DATA_MODE (research sessions force demo) and all live-table access through its live functions; live pages sit under the _authenticated gate because RLS scopes every live table to the signed-in user's own cases.

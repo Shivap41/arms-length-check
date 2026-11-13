@@ -421,3 +421,30 @@
 .session-settings legend { font-weight: 500; margin-bottom: 8px; }
 .session-radio, .session-switch { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .session-switch label { display: flex; flex-direction: column; }
+
+/* Live mode */
+.mode-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+.mode-option { padding: 8px 18px; font-size: 14px; font-weight: 500; background: var(--background); color: var(--muted-foreground); border: none; cursor: pointer; }
+.mode-option + .mode-option { border-left: 1px solid var(--border); }
+.mode-option-active { background: var(--primary); color: var(--primary-foreground); }
+.mode-option:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.live-badge { display: inline-block; vertical-align: middle; margin-left: 8px; padding: 2px 8px; border: 1px solid var(--primary); border-radius: 999px; color: var(--primary); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.live-actions { margin-bottom: 16px; }
+.live-actions a { text-decoration: none; }
+.live-note { color: var(--muted-foreground); font-size: 13px; margin: 8px 0 0; }
+.live-case-form { max-width: 640px; }
+.declaration-form { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.declaration-form h3 { font-size: 15px; font-weight: 500; margin: 0 0 10px; }
+.declaration-form select { width: 100%; padding: 8px 10px; border: 1px solid var(--input); border-radius: 4px; background: var(--background); font-size: 14px; }
+.screening-action .field-help { margin-top: 10px; }
+
+/* Sign-in page */
+.auth-page { display: flex; justify-content: center; padding: 48px 16px; }
+.auth-card { width: 100%; max-width: 420px; border: 1px solid var(--border); border-radius: 6px; padding: 28px; }
+.auth-card h1 { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
+.auth-card > p { color: var(--muted-foreground); font-size: 14px; line-height: 1.6; margin: 0 0 20px; }
+.auth-actions { display: flex; flex-direction: column; gap: 10px; }
+.google-auth-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 12px; background: #FFFFFF; border: 1px solid #747775; border-radius: 4px; color: #1F1F1F; font-size: 14px; font-weight: 500; cursor: pointer; }
+.google-auth-button:hover { background: #F7F8F8; }
+.google-auth-button:disabled, .lovable-auth-button:disabled { opacity: 0.6; cursor: default; }
+.auth-card .field-error { margin-top: 14px; }

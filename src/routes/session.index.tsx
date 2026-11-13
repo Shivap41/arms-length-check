@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { demoLatencies, getDemoSettings, loadDemoReviewers, resetDemoCase, setDemoSettings, type DemoLatency } from "@/data/screeningService";
+import { demoLatencies, getDemoSettings, loadDemoReviewers, resetDemoCase, setDataMode, setDemoSettings, type DemoLatency } from "@/data/screeningService";
 import { endResearchSession, getActiveSession, startResearchSession, type ActiveSession } from "@/lib/research-session";
 
 const description = "Start a moderated research session for the Faculty Review conflict-screening prototype.";
@@ -37,6 +37,7 @@ function SessionStart() {
     const parsed = sessionStartSchema.safeParse(form);
     if (!parsed.success) { setErrors(Object.fromEntries(parsed.error.issues.map(issue => [String(issue.path[0]), issue.message]))); return; }
     setDemoSettings(settings);
+    setDataMode("demo");
     resetDemoCase("ortiz-2027");
     loadDemoReviewers("ortiz-2027");
     startResearchSession(parsed.data.participantCode.toUpperCase(), parsed.data.facilitator);

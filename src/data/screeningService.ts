@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { demoScenario, demoChoiceKey, type DemoAnswer, type DemoProfile, type DemoResult, type DemoReviewer, type DemoScenario } from "./demoScenario";
+import { supabase } from "@/integrations/supabase/client";
+import { getActiveSession } from "@/lib/research-session";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
 export const identitySchema = z.string().trim().max(500, "Profile link is too long.").refine(value => {
@@ -371,4 +373,97 @@ export function allChecksSettled(screeningId: string): boolean {
   if (!screening) return false;
   const states = getCheckStates(screeningId);
   return Object.keys(screening.results).every(id => states[id] && states[id].status !== "running");
+}
+// ---------------------------------------------------------------------------
+// Data mode. The demo runs entirely in browser memory; live mode reads and
+// writes the Lovable Cloud tables. Research sessions always use the demo.
+export type DataMode = "demo" | "live";
+let dataMode: DataMode = "demo";
+const dataModeListeners = new Set<() => void>();
+export function getDataMode(): DataMode { return dataMode; }
+export function subscribeDataMode(listener: () => void): () => void { dataModeListeners.add(listener); return () => { dataModeListeners.delete(listener); }; }
+export function setDataMode(mode: DataMode): void {
+  z.enum(["demo", "live"]).parse(mode);
+  if (mode === "live" && getActiveSession()) return;
+  if (mode === dataMode) return;
+  dataMode = mode;
+  for (const fn of dataModeListeners) fn();
+}
+// ---------------------------------------------------------------------------
+// Live cases. Components reach the live tables only through these functions;
+// row-level security limits every query to the signed-in user's own cases.
+// Live conflict checking (OpenAlex/ORCID calls) is added in a later step.
+export type LiveCase = { id: string; title: string; candidateName: string; candidateInstitution: string; candidateOrcid: string; candidateConfirmedBy: string; createdAt: string };
+export const liveCaseSchema = z.object({
+  candidateName: z.string().trim().min(1, "Candidate name is required.").max(150, "Name must be 150 characters or fewer."),
+  institution: z.string().trim().min(1, "Institution is required.").max(200, "Institution must be 200 characters or fewer."),
+  orcid: z.string().trim().max(500).refine(value => !value || orcidPattern.test(value), "Enter a formatted ORCID iD (0000-0000-0000-000X).").default(""),
+});
+export type LiveCaseInput = z.input<typeof liveCaseSchema>;
+type LiveCaseRow = { id: string; title: string; candidate_name: string; candidate_institution: string; candidate_orcid: string | null; candidate_confirmed_by: string | null; created_at: string };
+function mapLiveCase(row: LiveCaseRow): LiveCase {
+  return { id: row.id, title: row.title, candidateName: row.candidate_name, candidateInstitution: row.candidate_institution, candidateOrcid: row.candidate_orcid ?? "", candidateConfirmedBy: row.candidate_confirmed_by ?? "", createdAt: row.created_at };
+}
+export async function listLiveCases(): Promise<LiveCase[]> {
+  const { data, error } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
+  if (error) throw new Error("Couldn't load live cases.");
+  return (data ?? []).map(mapLiveCase);
+}
+export async function createLiveCase(input: LiveCaseInput): Promise<LiveCase> {
+  const parsed = liveCaseSchema.parse(input);
+  const { data, error } = await supabase.from("cases").insert({ title: `External review — ${parsed.candidateName}`, candidate_name: parsed.candidateName, candidate_institution: parsed.institution, candidate_orcid: parsed.orcid || null }).select().single();
+  if (error || !data) throw new Error("Couldn't create the case. Try again.");
+  return mapLiveCase(data);
+}
+export async function getLiveCase(id: string): Promise<LiveCase | undefined> {
+  identifier.parse(id);
+  const { data, error } = await supabase.from("cases").select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error("Couldn't load the case.");
+  return data ? mapLiveCase(data) : undefined;
+}
+export async function listLiveReviewers(caseId: string): Promise<Reviewer[]> {
+  identifier.parse(caseId);
+  const { data, error } = await supabase.from("proposed_reviewers").select("*").eq("case_id", caseId).order("typed_name");
+  if (error) throw new Error("Couldn't load reviewers.");
+  return (data ?? []).map(row => ({ id: row.id, name: row.typed_name, institution: row.typed_institution, identity: row.typed_orcid ?? "" }));
+}
+export async function addLiveReviewers(caseId: string, rows: ReviewerInput[]): Promise<Reviewer[]> {
+  identifier.parse(caseId);
+  const parsed = z.array(reviewerSchema).min(1).max(100).parse(rows);
+  const { error } = await supabase.from("proposed_reviewers").insert(parsed.map(row => ({ case_id: caseId, typed_name: row.name, typed_institution: row.institution, typed_orcid: row.identity || null })));
+  if (error) throw new Error("Couldn't save reviewers. Try again.");
+  return listLiveReviewers(caseId);
+}
+export async function removeLiveReviewer(caseId: string, id: string): Promise<void> {
+  identifier.parse(caseId); identifier.parse(id);
+  const { error } = await supabase.from("proposed_reviewers").delete().eq("id", id).eq("case_id", caseId);
+  if (error) throw new Error("Couldn't remove the reviewer.");
+}
+export const declarationRelationships = ["advisor", "mentor", "student", "co_supervisor", "personal", "financial"] as const;
+export type DeclarationRelationship = (typeof declarationRelationships)[number];
+export const declarationRelationshipLabels: Record<DeclarationRelationship, string> = { advisor: "Former PhD advisor", mentor: "Postdoctoral mentor", student: "Former student", co_supervisor: "Co-supervisor", personal: "Personal tie", financial: "Financial tie" };
+export const liveDeclarationSchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(150, "Name must be 150 characters or fewer."),
+  relationship: z.enum(declarationRelationships),
+  note: z.string().trim().max(500, "Note must be 500 characters or fewer.").default(""),
+});
+export type LiveDeclarationInput = z.input<typeof liveDeclarationSchema>;
+export type LiveDeclaration = { id: string; name: string; relationship: DeclarationRelationship; note: string };
+export async function listLiveDeclarations(caseId: string): Promise<LiveDeclaration[]> {
+  identifier.parse(caseId);
+  const { data, error } = await supabase.from("declarations").select("*").eq("case_id", caseId).order("declared_name");
+  if (error) throw new Error("Couldn't load declarations.");
+  return (data ?? []).map(row => ({ id: row.id, name: row.declared_name, relationship: row.relationship as DeclarationRelationship, note: row.note ?? "" }));
+}
+export async function addLiveDeclaration(caseId: string, input: LiveDeclarationInput): Promise<LiveDeclaration[]> {
+  identifier.parse(caseId);
+  const parsed = liveDeclarationSchema.parse(input);
+  const { error } = await supabase.from("declarations").insert({ case_id: caseId, declared_name: parsed.name, relationship: parsed.relationship, note: parsed.note || null });
+  if (error) throw new Error("Couldn't save the declaration. Try again.");
+  return listLiveDeclarations(caseId);
+}
+export async function setLiveCandidateConfirmed(caseId: string, confirmedBy: string): Promise<void> {
+  identifier.parse(caseId);
+  const { error } = await supabase.from("cases").update({ candidate_confirmed_by: confirmedBy || null }).eq("id", caseId);
+  if (error) throw new Error("Couldn't save the confirmation. Try again.");
 }

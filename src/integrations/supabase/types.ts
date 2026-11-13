@@ -14,6 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_cache: {
+        Row: {
+          body: Json
+          fetched_at: string
+          key: string
+        }
+        Insert: {
+          body: Json
+          fetched_at?: string
+          key: string
+        }
+        Update: {
+          body?: Json
+          fetched_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
+      cases: {
+        Row: {
+          candidate_confirmed_by: string | null
+          candidate_institution: string
+          candidate_name: string
+          candidate_orcid: string | null
+          candidate_profile_ids: string[]
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+        }
+        Insert: {
+          candidate_confirmed_by?: string | null
+          candidate_institution: string
+          candidate_name: string
+          candidate_orcid?: string | null
+          candidate_profile_ids?: string[]
+          created_at?: string
+          created_by?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          candidate_confirmed_by?: string | null
+          candidate_institution?: string
+          candidate_name?: string
+          candidate_orcid?: string | null
+          candidate_profile_ids?: string[]
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      decisions: {
+        Row: {
+          decided_at: string
+          decided_by: string
+          decision: string
+          id: string
+          reason: string | null
+          screening_name_id: string
+        }
+        Insert: {
+          decided_at?: string
+          decided_by: string
+          decision: string
+          id?: string
+          reason?: string | null
+          screening_name_id: string
+        }
+        Update: {
+          decided_at?: string
+          decided_by?: string
+          decision?: string
+          id?: string
+          reason?: string | null
+          screening_name_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_screening_name_id_fkey"
+            columns: ["screening_name_id"]
+            isOneToOne: false
+            referencedRelation: "screening_names"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      declarations: {
+        Row: {
+          case_id: string
+          declared_name: string
+          id: string
+          note: string | null
+          relationship: string
+        }
+        Insert: {
+          case_id: string
+          declared_name: string
+          id?: string
+          note?: string | null
+          relationship: string
+        }
+        Update: {
+          case_id?: string
+          declared_name?: string
+          id?: string
+          note?: string | null
+          relationship?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declarations_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      findings: {
+        Row: {
+          evidence: Json
+          id: string
+          rule: string
+          screening_name_id: string
+          severity: string
+        }
+        Insert: {
+          evidence?: Json
+          id?: string
+          rule: string
+          screening_name_id: string
+          severity: string
+        }
+        Update: {
+          evidence?: Json
+          id?: string
+          rule?: string
+          screening_name_id?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "findings_screening_name_id_fkey"
+            columns: ["screening_name_id"]
+            isOneToOne: false
+            referencedRelation: "screening_names"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       identity_events: {
         Row: {
           created_at: string
@@ -64,6 +217,38 @@ export type Database = {
           },
         ]
       }
+      proposed_reviewers: {
+        Row: {
+          case_id: string
+          id: string
+          typed_institution: string
+          typed_name: string
+          typed_orcid: string | null
+        }
+        Insert: {
+          case_id: string
+          id?: string
+          typed_institution: string
+          typed_name: string
+          typed_orcid?: string | null
+        }
+        Update: {
+          case_id?: string
+          id?: string
+          typed_institution?: string
+          typed_name?: string
+          typed_orcid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposed_reviewers_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       research_sessions: {
         Row: {
           consented: boolean
@@ -87,6 +272,101 @@ export type Database = {
           started_at?: string
         }
         Relationships: []
+      }
+      screening_names: {
+        Row: {
+          check_stage: string | null
+          check_status: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          error: string | null
+          id: string
+          identity_method: string | null
+          identity_status: string
+          profile_ids: string[]
+          reason: string | null
+          result: string | null
+          reviewer_id: string
+          screening_id: string
+        }
+        Insert: {
+          check_stage?: string | null
+          check_status?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          error?: string | null
+          id?: string
+          identity_method?: string | null
+          identity_status?: string
+          profile_ids?: string[]
+          reason?: string | null
+          result?: string | null
+          reviewer_id: string
+          screening_id: string
+        }
+        Update: {
+          check_stage?: string | null
+          check_status?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          error?: string | null
+          id?: string
+          identity_method?: string | null
+          identity_status?: string
+          profile_ids?: string[]
+          reason?: string | null
+          result?: string | null
+          reviewer_id?: string
+          screening_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screening_names_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "proposed_reviewers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screening_names_screening_id_fkey"
+            columns: ["screening_id"]
+            isOneToOne: false
+            referencedRelation: "screenings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screenings: {
+        Row: {
+          case_id: string
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          case_id: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          case_id?: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screenings_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

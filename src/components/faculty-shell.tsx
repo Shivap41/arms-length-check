@@ -1,8 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, Mail, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { getActiveSession, logResearchEvent, SESSION_CHANGE_EVENT, type ActiveSession } from "@/lib/research-session";
 import { onCheckEvent } from "@/data/screeningService";
+import { supabase } from "@/integrations/supabase/client";
+import { AUTH_CHANGE_EVENT } from "@/routes/__root";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -28,6 +31,21 @@ export function FacultyShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(SESSION_CHANGE_EVENT, sync);
   }, []);
   useEffect(() => onCheckEvent(event => logResearchEvent(event.type, { reviewerId: event.reviewerId })), []);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [userEmail, setUserEmail] = useState<string>();
+  useEffect(() => {
+    const sync = () => void supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? ""));
+    sync();
+    window.addEventListener(AUTH_CHANGE_EVENT, sync);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, sync);
+  }, []);
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    await navigate({ to: "/auth", search: { redirect: "/cases" }, replace: true });
+  }
   return (
     <div className="faculty-app">
       <header className="faculty-header">
@@ -35,8 +53,8 @@ export function FacultyShell({ children }: { children: ReactNode }) {
         <Link to="/" className="faculty-brand"><Mark /><span>Faculty Review</span></Link>
         {session && <span className="session-badge" title={`Research session ${session.participantCode}`}>Session mode · {session.participantCode}</span>}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button variant="header" className="user-menu">Dr. Lena Hoffmann<ChevronDown /></Button></DropdownMenuTrigger>
-          <DropdownMenuContent align="end"><DropdownMenuItem>Profile</DropdownMenuItem><DropdownMenuItem>Sign out</DropdownMenuItem></DropdownMenuContent>
+          <DropdownMenuTrigger asChild><Button variant="header" className="user-menu">{userEmail || "Dr. Lena Hoffmann"}<ChevronDown /></Button></DropdownMenuTrigger>
+          <DropdownMenuContent align="end">{userEmail ? <DropdownMenuItem onSelect={() => void signOut()}>Sign out</DropdownMenuItem> : <DropdownMenuItem onSelect={() => void navigate({ to: "/auth", search: { redirect: "/cases" } })}>Sign in</DropdownMenuItem>}</DropdownMenuContent>
         </DropdownMenu>
       </header>
       <div className={`faculty-layout ${sidebarOpen ? "" : "navigation-collapsed"}`}>
