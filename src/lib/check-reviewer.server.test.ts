@@ -80,3 +80,44 @@ describe("check-reviewer", () => {
     expect(outcome?.reason).toContain("name scan covered 10 of 1500 works");
   });
 });
+
+describe("check-reviewer umbrella lookup (D57)", () => {
+  it("marks a shared institution with child institutions as an umbrella, so it gives no R4", async () => {
+    const uc = { id: "https://openalex.org/I2803209242", display_name: "University of California System", type: "education" };
+    const withHistory = (id: string, name: string, campus: { id: string; display_name: string }) => ({ ...author(id, name), affiliations: [{ institution: uc, years: [2016, 2017] }, { institution: { ...campus, type: "education" }, years: [2016, 2017] }] });
+    const { row, store } = memoryStore();
+    const getInstitution = vi.fn(async (id: string) => ({ data: id === "I2803209242" ? { ...uc, associated_institutions: [{ id: "https://openalex.org/I95457486", type: "education", relationship: "child" }, { id: "https://openalex.org/I84218800", type: "education", relationship: "child" }] } : { id, display_name: "x", type: "education" } }));
+    await runReviewerCheck(sources({
+      getAuthor: vi.fn(async (id: string) => ({ data: id === "AC" ? withHistory("AC", "Cara Candidate", { id: "https://openalex.org/I95457486", display_name: "UC Berkeley" }) : withHistory("AR", "Rita Reviewer", { id: "https://openalex.org/I84218800", display_name: "UC Davis" }) })),
+      getSharedWorks: vi.fn(async () => ({ data: [] })),
+      getInstitution,
+    }), store, { ...input, today: "2026-11-13" }, metrics);
+    expect(getInstitution).toHaveBeenCalledWith("I2803209242");
+    expect(row).toMatchObject({ check_status: "done", result: "no_conflict", findings: 0 });
+  });
+
+  it("a campus with its own child units (UC Berkeley) is not an umbrella: Berkeley vs Berkeley still gives R4", async () => {
+    const berkeley = { id: "https://openalex.org/I95457486", display_name: "University of California, Berkeley", type: "education" };
+    const withBerkeley = (id: string, name: string) => ({ ...author(id, name), affiliations: [{ institution: berkeley, years: [2016, 2017] }] });
+    const { row, store } = memoryStore();
+    await runReviewerCheck(sources({
+      getAuthor: vi.fn(async (id: string) => ({ data: id === "AC" ? withBerkeley("AC", "Cara Candidate") : withBerkeley("AR", "Rita Reviewer") })),
+      getSharedWorks: vi.fn(async () => ({ data: [] })),
+      getInstitution: vi.fn(async () => ({ data: { ...berkeley, associated_institutions: [{ id: "https://openalex.org/I1", type: "facility", relationship: "child" }, { id: "https://openalex.org/I2", type: "education", relationship: "child" }, { id: "https://openalex.org/I2803209242", type: "education", relationship: "parent" }] } })),
+    }), store, { ...input, today: "2026-11-13" }, metrics);
+    expect(row).toMatchObject({ check_status: "done", result: "potential", findings: 1 });
+  });
+  it("Berkeley + IGI vs Berkeley only: Berkeley is not an umbrella, so R4 at Berkeley stays", async () => {
+    const berkeley = { id: "https://openalex.org/I95457486", display_name: "University of California, Berkeley", type: "education" };
+    const igi = { id: "https://openalex.org/I4210109258", display_name: "Innovative Genomics Institute", type: "education" };
+    const candidateAuthor = { ...author("AC", "Cara Candidate"), affiliations: [{ institution: berkeley, years: [2016, 2017] }, { institution: igi, years: [2016, 2017] }] };
+    const reviewerAuthor = { ...author("AR", "Rita Reviewer"), affiliations: [{ institution: berkeley, years: [2016, 2017] }] };
+    const { row, store } = memoryStore();
+    await runReviewerCheck(sources({
+      getAuthor: vi.fn(async (id: string) => ({ data: id === "AC" ? candidateAuthor : reviewerAuthor })),
+      getSharedWorks: vi.fn(async () => ({ data: [] })),
+      getInstitution: vi.fn(async () => ({ data: { ...berkeley, associated_institutions: [{ id: igi.id, type: "education", relationship: "child" }] } })),
+    }), store, { ...input, today: "2026-11-13" }, metrics);
+    expect(row).toMatchObject({ check_status: "done", result: "potential", findings: 1 });
+  });
+});

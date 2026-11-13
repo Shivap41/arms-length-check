@@ -34,6 +34,8 @@ export type RulesInput = {
   sharedWorks: RuleWork[];
   /** Institution types looked up by id (education, funder, facility, ...). */
   institutionTypes: Record<string, string | null>;
+  /** Umbrella institutions (systems, parents with child institutions): never count for R3/R4 (D57). */
+  umbrellaInstitutionIds?: string[];
   declarations: Declaration[];
 };
 
@@ -48,9 +50,27 @@ function workEvidence(work: RuleWork, profileIds: string[]): WorkEvidence {
   return { title: work.title ?? "Untitled", year: work.year, doi: work.doi, venue: work.venue, author_count: work.authors.length, profile_id: work.authors.find(author => author.id && profileIds.includes(author.id))?.id ?? null };
 }
 
-/** Counted types only; a preprint is dropped when a non-preprint shared work has the same normalised title. */
+/** DOI without resolver prefix or a version suffix: osf.io/abc_v2 and osf.io/abc_v1 are one work (D57). */
+export function doiWithoutVersion(doi: string): string {
+  return doi.trim().toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//, "").replace(/[._]v\d+$/, "");
+}
+/** Of several versions of one DOI, keep a non-preprint if there is one, else the latest. */
+function oneVersionPerDoi(works: RuleWork[]): RuleWork[] {
+  const byDoi = new Map<string, RuleWork>();
+  const out: RuleWork[] = [];
+  for (const work of works) {
+    if (!work.doi) { out.push(work); continue; }
+    const key = doiWithoutVersion(work.doi);
+    const kept = byDoi.get(key);
+    const better = !kept || (kept.type === "preprint" && work.type !== "preprint") || (kept.type === work.type && (work.year ?? 0) > (kept.year ?? 0));
+    if (better) byDoi.set(key, work);
+  }
+  return [...out, ...byDoi.values()];
+}
+
+/** Counted types only; versions of one DOI count once; a preprint is dropped when a non-preprint shared work has the same normalised title. */
 export function countedSharedWorks(works: RuleWork[], config: RulesConfig = rulesConfig): RuleWork[] {
-  const unique = [...new Map(works.map(work => [work.id, work])).values()].filter(work => (config.countedWorkTypes as readonly string[]).includes(work.type));
+  const unique = oneVersionPerDoi([...new Map(works.map(work => [work.id, work])).values()].filter(work => (config.countedWorkTypes as readonly string[]).includes(work.type)));
   const published = new Set(unique.filter(work => work.type !== "preprint").map(work => normaliseTitle(work.title)));
   return unique.filter(work => work.type !== "preprint" || !published.has(normaliseTitle(work.title)));
 }
@@ -99,6 +119,11 @@ function sameInstitution(a: InstitutionRecord, b: InstitutionRecord): boolean {
 function institutionType(a: InstitutionRecord, b: InstitutionRecord, types: Record<string, string | null>): string | null {
   return (a.id ? types[a.id] ?? a.type : a.type) ?? (b.id ? types[b.id] ?? b.type : b.type) ?? null;
 }
+/** D57: a university system or other parent record counts for nothing; only the specific campus or institute does. */
+export function isUmbrella(record: InstitutionRecord, umbrellaIds: ReadonlySet<string>): boolean {
+  if (record.id) return umbrellaIds.has(record.id);
+  return /\bsystem\b/i.test(record.name);
+}
 function institutionKey(a: InstitutionRecord, b: InstitutionRecord): string { return a.id ?? b.id ?? `name:${fold(a.name)}`; }
 
 /** Stage 2: education institutions only. R3 needs current evidence on both sides; else R4 for overlapping history within the window. */
@@ -106,15 +131,17 @@ export function institutionFindings(input: RulesInput, config: RulesConfig = rul
   const thisYear = yearOf(input.today);
   const findings: Finding[] = [];
   const seen = new Set<string>();
+  const umbrellas = new Set(input.umbrellaInstitutionIds ?? []);
+  const skip = (c: InstitutionRecord, r: InstitutionRecord) => isUmbrella(c, umbrellas) || isUmbrella(r, umbrellas);
   for (const c of input.candidate.current) for (const r of input.reviewer.current) {
-    if (!sameInstitution(c, r) || institutionType(c, r, input.institutionTypes) !== "education") continue;
+    if (skip(c, r) || !sameInstitution(c, r) || institutionType(c, r, input.institutionTypes) !== "education") continue;
     const key = institutionKey(c, r);
     if (seen.has(key)) continue;
     seen.add(key);
     findings.push({ rule: "R3", severity: "conflict", evidence: { institution: { name: c.name || r.name, candidate_years: c.years, reviewer_years: r.years, candidate_source: c.source, reviewer_source: r.source } } });
   }
   for (const c of input.candidate.history) for (const r of input.reviewer.history) {
-    if (!sameInstitution(c, r) || institutionType(c, r, input.institutionTypes) !== "education") continue;
+    if (skip(c, r) || !sameInstitution(c, r) || institutionType(c, r, input.institutionTypes) !== "education") continue;
     const key = institutionKey(c, r);
     if (seen.has(key)) continue;
     const overlap = c.years.filter(year => r.years.includes(year));

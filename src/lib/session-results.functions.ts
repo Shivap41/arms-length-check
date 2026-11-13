@@ -4,7 +4,7 @@ import { computeSessionMetrics, computeTotals, type EventRow, type SessionRow } 
 
 
 export const getSessionResults = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ passcode: z.string().min(1).max(200) }).parse(input))
+  .validator((input: unknown) => z.object({ passcode: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ data }) => {
     const { passcodeError } = await import("@/lib/passcode.server");
     const denied = passcodeError(data.passcode);

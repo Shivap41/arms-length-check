@@ -11,7 +11,7 @@ const identifySchema = z.object({
 /** B3 identify: ORCID -> confirmed; otherwise top 3 cards for the chair. Server only. */
 export const identifyPerson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => identifySchema.parse(input))
+  .validator((input: unknown) => identifySchema.parse(input))
   .handler(async ({ data, context }) => {
     const { serverSources } = await import("@/lib/server-sources.server");
     const { identifyCore } = await import("@/lib/identify.server");
@@ -21,7 +21,7 @@ export const identifyPerson = createServerFn({ method: "POST" })
 /** Resolve a pasted ORCID or openalex.org author link so the chair can see it before it is saved. */
 export const resolveProfileLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ link: z.string().trim().min(1).max(500) }).parse(input))
+  .validator((input: unknown) => z.object({ link: z.string().trim().min(1).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
     const { serverSources } = await import("@/lib/server-sources.server");
     const { resolveCore } = await import("@/lib/identify.server");

@@ -29,7 +29,7 @@ export type CheckInput = {
   declarations: Declaration[];
 };
 
-const institutionSchema = z.object({ id: z.string().nullish(), display_name: z.string().nullish(), type: z.string().nullish() }).passthrough();
+const institutionSchema = z.object({ id: z.string().nullish(), display_name: z.string().nullish(), type: z.string().nullish(), associated_institutions: z.array(z.object({ id: z.string().nullish(), type: z.string().nullish(), relationship: z.string().nullish() }).passthrough()).nullish() }).passthrough();
 const authorSchema = z.object({
   id: z.string(), display_name: z.string(), orcid: z.string().nullish(), works_count: z.number().nullish(),
   affiliations: z.array(z.object({ institution: institutionSchema, years: z.array(z.number()).nullish() }).passthrough()).nullish(),
@@ -133,11 +133,24 @@ export async function runReviewerCheck(sources: CheckSources, store: CheckStore,
     const [candidateJobs, reviewerJobs] = await Promise.all([employments(input.candidate.orcid ?? candidateAuthors[0]?.orcid), employments(reviewerAuthors.find(author => author.orcid)?.orcid)]);
     const candidateCurrent = [...orcidCurrent(candidateJobs, [...candidateHistory, ...candidateByline], thisYear), ...candidateByline];
     const reviewerCurrent = [...orcidCurrent(reviewerJobs, [...reviewerHistory, ...reviewerByline], thisYear), ...reviewerByline];
-    // Look up the type of any institution both people share whose type the records don't carry.
+    // Look up every institution both people share: its type, and whether it is an umbrella (D57).
+    // A shared parent record (e.g. "University of California System") is an umbrella when BOTH people
+    // also have records at its education-type children: then only those specific campuses or
+    // institutes are compared. A campus that merely contains institutes (UC Berkeley containing the
+    // Innovative Genomics Institute) still counts when only one side has the institute.
+    const idsOf = (records: InstitutionRecord[]) => new Set(records.map(record => record.id).filter((id): id is string => Boolean(id)));
+    const candidateRecordIds = idsOf([...candidateCurrent, ...candidateHistory]);
+    const reviewerRecordIds = idsOf([...reviewerCurrent, ...reviewerHistory]);
     const candidateIds = new Set([...candidateCurrent, ...candidateHistory].map(record => record.id).filter(Boolean));
-    const both = [...new Set([...reviewerCurrent, ...reviewerHistory].filter(record => record.id && candidateIds.has(record.id) && !record.type).map(record => record.id as string))];
+    const both = [...new Set([...reviewerCurrent, ...reviewerHistory].filter(record => record.id && candidateIds.has(record.id)).map(record => record.id as string))];
     const institutionTypes: Record<string, string | null> = {};
-    for (const id of both) institutionTypes[id] = parse(institutionSchema, (await sources.getInstitution(id)).data).type ?? null;
+    const umbrellaInstitutionIds: string[] = [];
+    for (const id of both) {
+      const institution = parse(institutionSchema, (await sources.getInstitution(id)).data);
+      institutionTypes[id] = institution.type ?? null;
+      const educationChildren = (institution.associated_institutions ?? []).filter(entry => entry.relationship === "child" && entry.type === "education" && entry.id).map(entry => shortId(entry.id as string));
+      if (educationChildren.some(child => candidateRecordIds.has(child)) && educationChildren.some(child => reviewerRecordIds.has(child))) umbrellaInstitutionIds.push(id);
+    }
 
     // Stage 3: declarations, then the rules.
     stage = "declarations"; await store.stage("declarations");
@@ -147,6 +160,7 @@ export async function runReviewerCheck(sources: CheckSources, store: CheckStore,
       reviewer: { profileIds: input.reviewer.profileIds, typedName: input.reviewer.typedName, profileNames: reviewerAuthors.map(author => author.display_name), worksCount: reviewerAuthors.reduce((sum, author) => sum + (author.works_count ?? 0), 0), current: reviewerCurrent, history: reviewerHistory },
       sharedWorks: shared.map(toRuleWork),
       institutionTypes,
+      umbrellaInstitutionIds,
       declarations: input.declarations,
     });
     await store.complete({ findings: output.findings, result: output.result, reason: output.reason, notes: notes({ nameScan: output.nameScan, sharedWorks: shared.length }) });

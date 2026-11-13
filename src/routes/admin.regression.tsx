@@ -5,7 +5,7 @@ import { Download, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PasscodeGate } from "@/components/passcode-gate";
 import { regressionPair, rulesSelftest } from "@/lib/admin.functions";
-import { buildReport, FROZEN_RUN4_SHA256, parseFixtures, RECALL_TARGET, reportToCsv, stopsRun, type PairOutcome, type RegressionPair } from "@/lib/regression";
+import { buildReport, KNOWN_FIXTURES, parseFixtures, RECALL_TARGET, reportToCsv, stopsRun, type PairOutcome, type RegressionPair } from "@/lib/regression";
 
 const description = "Regression against the spike's frozen run 4 fixtures, with both people confirmed by ORCID.";
 export const Route = createFileRoute("/admin/regression")({
@@ -80,7 +80,7 @@ function Regression() {
       <div className="reviewer-field"><label htmlFor="fixtures-file">Fixtures file (JSON)</label><input id="fixtures-file" type="file" accept="application/json,.json" disabled={running} onChange={event => { const file = event.target.files?.[0]; if (file) void file.text().then(load); }} /></div>
       <details><summary>Or paste the JSON</summary><textarea aria-label="Fixtures JSON" rows={4} value={paste} onChange={event => setPaste(event.target.value)} /><Button variant="outline" disabled={!paste.trim() || running} onClick={() => void load(paste)}>Load pasted fixtures</Button></details>
       {loadError && <p className="field-error" role="alert">{loadError}</p>}
-      {fixtures && <p className="field-help">{fixtures.pairs.length} pairs ({counts}) · {fixtures.format === "run4" ? "full run 4 file" : "slim file"} · SHA-256 {fixtures.hash.slice(0, 12)}… {fixtures.hash === FROZEN_RUN4_SHA256 ? "matches the frozen run 4 fixtures" : "(not the frozen run 4 file)"}</p>}
+      {fixtures && <p className="field-help">{fixtures.pairs.length} pairs ({counts}) · {fixtures.format === "run4" ? "full run 4 file" : "slim file"} · SHA-256 {fixtures.hash.slice(0, 12)}… {KNOWN_FIXTURES[fixtures.hash] ? `matches the ${KNOWN_FIXTURES[fixtures.hash]}` : "(not a known frozen fixtures file)"}</p>}
     </section>
     {fixtures && <div className="admin-actions">
       {running ? <Button variant="outline" onClick={() => { cancel.current = true; }}><Square />Stop</Button> : <Button onClick={() => void run()}><Play />Run regression</Button>}

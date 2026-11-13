@@ -115,7 +115,42 @@ describe("rules extras", () => {
 describe("result reason", () => {
   it("groups findings by rule and names the institutions", () => {
     const rec = (id: string, name: string) => ({ id, name, type: "education", years: [2026], source: "byline 2026" });
-    const out = runRules(input({ sharedWorks: [work({ id: "W1" }), work({ id: "W2", title: "Another" })], candidate: { current: [rec("I1", "Uni A"), rec("I2", "Uni B")] }, reviewer: { current: [rec("I1", "Uni A"), rec("I2", "Uni B")] } }));
+    const out = runRules(input({ sharedWorks: [work({ id: "W1" }), work({ id: "W2", title: "Another", doi: "https://doi.org/10.1/y" })], candidate: { current: [rec("I1", "Uni A"), rec("I2", "Uni B")] }, reviewer: { current: [rec("I1", "Uni A"), rec("I2", "Uni B")] } }));
     expect(out.reason).toBe("recent co-authored work (2, R1); same current institution: Uni A, Uni B (R3)");
+  });
+});
+
+describe("D57 umbrella institutions", () => {
+  const ucSystem = (years: number[]) => ({ id: "I2803209242", name: "University of California System", type: "education", years, source: "affiliation history" });
+  const berkeley = { id: "I95457486", name: "University of California, Berkeley", type: "education", years: [2015, 2016, 2017, 2018], source: "affiliation history" };
+  const davis = { id: "I84218800", name: "University of California, Davis", type: "education", years: [2016, 2017, 2018], source: "affiliation history" };
+  it("UC Berkeley vs UC Davis people do NOT get R4 via the UC System", () => {
+    const out = runRules(input({ umbrellaInstitutionIds: ["I2803209242"], candidate: { history: [berkeley, ucSystem([2015, 2016, 2017, 2018])] }, reviewer: { history: [davis, ucSystem([2016, 2017, 2018])] } }));
+    expect(out.findings).toEqual([]);
+    expect(out.result).toBe("no_conflict");
+  });
+  it("…and not R3 either when both have current UC System bylines", () => {
+    const current = { ...ucSystem([2026]), source: "byline 2026" };
+    expect(runRules(input({ umbrellaInstitutionIds: ["I2803209242"], candidate: { current: [current] }, reviewer: { current: [current] } })).findings).toEqual([]);
+  });
+  it("a name-only 'System' record is ignored too; the specific campus still counts", () => {
+    const nameOnly = { id: null, name: "University of California System", type: "education", years: [2026], source: "ORCID employment, current" };
+    expect(runRules(input({ candidate: { current: [nameOnly] }, reviewer: { current: [nameOnly] } })).findings).toEqual([]);
+    const both = { ...berkeley, years: [2020, 2021] };
+    expect(runRules(input({ umbrellaInstitutionIds: ["I2803209242"], candidate: { history: [both] }, reviewer: { history: [both] } })).findings.map(f => f.rule)).toEqual(["R4"]);
+  });
+});
+
+describe("D57 preprint versions", () => {
+  it("counts _v1 and _v2 of one preprint DOI once, keeping the latest", () => {
+    const v1 = work({ id: "W1", type: "preprint", year: 2025, title: "Cognitive Science at Scale", doi: "https://doi.org/10.31234/osf.io/mnkwd_v1" });
+    const v2 = work({ id: "W2", type: "preprint", year: 2026, title: "Scaling cognitive science with classroom games", doi: "https://doi.org/10.31234/osf.io/mnkwd_v2" });
+    const out = runRules(input({ sharedWorks: [v1, v2] }));
+    const works = out.findings[0]?.evidence["works"] as { year: number; doi: string }[];
+    expect(works).toHaveLength(1);
+    expect(works[0]).toMatchObject({ year: 2026, doi: "https://doi.org/10.31234/osf.io/mnkwd_v2" });
+  });
+  it("keeps genuinely different DOIs, and treats .v2 the same as _v2", () => {
+    expect(runRules(input({ sharedWorks: [work({ id: "A", doi: "10.1/a.v1" }), work({ id: "B", doi: "10.1/a.v2" }), work({ id: "C", doi: "10.1/b", title: "Other" })] })).findings[0]?.evidence["works"]).toHaveLength(2);
   });
 });

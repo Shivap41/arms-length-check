@@ -9,7 +9,7 @@ import type { Json } from "@/integrations/supabase/types";
  */
 export const checkReviewer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ screeningNameId: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ screeningNameId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     const { serverSources } = await import("@/lib/server-sources.server");

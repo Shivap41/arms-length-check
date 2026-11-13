@@ -3,6 +3,11 @@ import { z } from "zod";
 // B6 regression against the spike fixtures. Pure: parsing, scoring and CSV. No network.
 
 export const FROZEN_RUN4_SHA256 = "1a95b60614b2a0f1c05d94bf1ef961898d4a83ec8c20682b24dba2175bceb919";
+/** Known frozen fixture files: v2 is the run 4 freeze; v3 relabels Duflo x Dillon as recent (D57). */
+export const KNOWN_FIXTURES: Record<string, string> = {
+  [FROZEN_RUN4_SHA256]: "frozen run 4 fixtures (v2)",
+  "89c49717fefcba462f1302b0b431295c9a2a4f3f523bfded2dae0c7b56132223": "run 4 fixtures v3 (D57: Duflo x Dillon relabelled recent)",
+};
 export const RECALL_TARGET = 0.85;
 export type Expected = "Conflict" | "Potential" | "No conflict found" | "Insufficient data";
 export type PairKind = "coauthor" | "unrelated" | "decoy";

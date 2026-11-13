@@ -1,0 +1,65 @@
+pair,candidate,reviewer,type,kind,expected,actual,match,confirming_doi_found,rules,reason_or_error,fresh_calls,cached_calls,duration_ms
+1,Carolyn Bertozzi,Nicholas Riley,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 NAME_ONLY R3,"recent co-authored work (31, R1); same current institution: Stanford University (R3)",0,13,2754
+2,Carolyn Bertozzi,Stacy Malaker,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 R4,"recent co-authored work (15, R1)",0,6,2499
+3,Carolyn Bertozzi,Heinz Laubli,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2,"recent co-authored work (2, R1)",0,12,2551
+4,Carolyn Bertozzi,Sharon Pitteri,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM SAME_NAME_OTHER_PERSON R3 R4 R4 R4,"recent co-authored work (3, R1); same current institution: Stanford University (R3)",0,21,3090
+5,Carolyn Bertozzi,Andrew Yang,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R3 R4,"recent co-authored work (2, R1); same current institution: Stanford University (R3)",0,17,1444
+6,Carolyn Bertozzi,Lauren Wagner,older co-author,coauthor,Potential,Potential,true,true,R2 R4,"older co-authored work (3, R2); same past institution: University of California, Berkeley (R4)",0,7,1164
+7,Jennifer Doudna,Gavin Knott,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM R3,"recent co-authored work (10, R1); same current institution: Innovative Genomics Institute (R3)",0,14,1147
+8,Jennifer Doudna,Jill Banfield,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM R3,"recent co-authored work (12, R1); same current institution: Innovative Genomics Institute (R3)",0,20,1422
+9,Jennifer Doudna,Kyle Watters,older co-author,coauthor,Potential,Potential,true,true,R2 R4,"older co-authored work (5, R2); same past institution: University of California, Berkeley (R4)",0,13,977
+10,Esther Duflo,Abhijit Banerjee,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM NAME_ONLY SAME_NAME_OTHER_PERSON R3 R4 R4 R4 R4 R4 R4 R4 R4 R4 R4 R4 R4 R4,"recent co-authored work (13, R1); same current institution: Massachusetts Institute of Technology (R3)",0,44,2373
+11,Esther Duflo,Elizabeth Spelke,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 R3 R4,"recent co-authored work (3, R1); same current institution: Massachusetts Institute of Technology (R3)",0,14,937
+12,Esther Duflo,Moira Dillon,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R4 R4,"recent co-authored work (1, R1)",0,14,721
+13,Melissa Terras,Joseph Nockels,recent co-author,coauthor,Conflict,Conflict,true,true,R1 LARGE_TEAM R3 R3,"recent co-authored work (8, R1); same current institution: University of Edinburgh, University of Glasgow (R3)",0,13,782
+14,Melissa Terras,Nicola Osborne,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 SAME_NAME_OTHER_PERSON R3,"recent co-authored work (5, R1); same current institution: University of Edinburgh (R3)",0,9,434
+15,Melissa Terras,Julianne Nyhan,older co-author,coauthor,Potential,Potential,true,true,R2 LARGE_TEAM R4,"older co-authored work (14, R2); large-team paper (1, LARGE_TEAM); same past institution: University College London (R4)",0,13,608
+16,Barbara McGillivray,Nilo Pedrazzini,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R4,"recent co-authored work (3, R1)",0,13,601
+17,Barbara McGillivray,Marton Ribary,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2,"recent co-authored work (3, R1)",0,11,531
+18,Barbara McGillivray,Gard Jenset,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2,"recent co-authored work (3, R1)",0,12,601
+19,Barbara McGillivray,Jóhanna Barðdal,older co-author,coauthor,Potential,Potential,true,true,R2,"older co-authored work (2, R2)",0,8,544
+20,Carolyn Bertozzi,Elizabeth Spelke,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,17,1280
+21,Carolyn Bertozzi,Henrik Clausen,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,15,1263
+22,Jennifer Doudna,Moira Dillon,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,14,1034
+23,Jennifer Doudna,Allan Bradley,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,10,1271
+24,Esther Duflo,Joseph Nockels,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,11,577
+25,Esther Duflo,Jonathan Morduch,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,16,896
+26,Melissa Terras,Nicholas Riley,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,11,479
+27,Melissa Terras,Allen Riddell,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,11,500
+28,Barbara McGillivray,Stacy Malaker,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,10,451
+29,Barbara McGillivray,Steven Pinker,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,9,450
+30,Charles Burnett,Corleone Delaveris,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,11,461
+31,Charles Burnett,Peter Adamson,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,8,507
+32,Peter Marshall,Kayvon Pedram,unrelated (cross-field),unrelated,Insufficient data,Insufficient data,true,,,Publication data says little for this candidate,0,10,407
+33,Esther Duflo,Abhijit Banerjee,same-name decoy,decoy,No conflict found,Potential,false,,NAME_ONLY SAME_NAME_OTHER_PERSON,"same name on a candidate paper (1, NAME_ONLY)",0,11,520
+34,Melissa Terras,Suzanne Black,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,11,617
+35,Barbara McGillivray,Andrea Farina,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,11,616
+36,Carolyn Bertozzi,Nick Riley,same-name decoy,decoy,No conflict found,Potential,false,,NAME_ONLY SAME_NAME_OTHER_PERSON,"same name on a candidate paper (1, NAME_ONLY)",0,13,1337
+37,Frances Arnold,Kai Chen,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 NAME_ONLY R3,"recent co-authored work (5, R1); same current institution: California Institute of Technology (R3)",0,20,1431
+38,Frances Arnold,Kendall Houk,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R4 R4 R4,"recent co-authored work (10, R1)",0,29,1728
+39,Frances Arnold,Jennifer Kan,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R3,"recent co-authored work (1, R1); same current institution: California Institute of Technology (R3)",0,8,937
+40,Frances Arnold,Xiongyi Huang,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R4 R4 R4,"recent co-authored work (2, R1)",0,17,1260
+41,Frances Arnold,Anders Knight,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 R3 R4 R4,"recent co-authored work (2, R1); same current institution: California Institute of Technology (R3)",0,11,984
+42,Frances Arnold,Oliver Brandenberg,older co-author,coauthor,Potential,Potential,true,true,R2 R4 R4,"older co-authored work (7, R2); same past institution: California Institute of Technology, University of California, Los Angeles (R4)",0,10,747
+43,Frances Arnold,Elizabeth Spelke,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,14,805
+44,Frances Arnold,Roger Sheldon,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,14,859
+45,Brian Nosek,Tim Errington,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM SAME_NAME_OTHER_PERSON R4,"recent co-authored work (19, R1)",0,13,980
+46,Brian Nosek,David Mellor,recent co-author,coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM R4 R4 R4 R4 R4,"recent co-authored work (2, R1)",0,18,1324
+47,Brian Nosek,Charles Ebersole,recent co-author (relabelled from older),coauthor,Conflict,Conflict,true,true,R1 R2 LARGE_TEAM R3,"recent co-authored work (5, R1); same current institution: University of Virginia (R3)",0,13,950
+48,Brian Nosek,Alexander DeHaven,older co-author,coauthor,Potential,Potential,true,true,R2 SAME_NAME_OTHER_PERSON,"older co-authored work (13, R2)",0,13,881
+49,Brian Nosek,Nicholas Riley,unrelated (cross-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,14,945
+50,Brian Nosek,Alice Eagly,unrelated (same-field),unrelated,No conflict found,No conflict found,true,,,"No shared works, shared institutions or declarations found",0,12,1082
+51,Carolyn Bertozzi,Lauren Wagner,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,13,1492
+52,Frances Arnold,Kai Chen,same-name decoy,decoy,No conflict found,Potential,false,,NAME_ONLY SAME_NAME_OTHER_PERSON,"same name on a candidate paper (1, NAME_ONLY)",0,13,1336
+53,Carolyn Bertozzi,Nicholas Riley,same-name decoy,decoy,No conflict found,Potential,false,,NAME_ONLY SAME_NAME_OTHER_PERSON,"same name on a candidate paper (1, NAME_ONLY)",0,12,1700
+54,Carolyn Bertozzi,Andrew Yang,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,11,1070
+55,Esther Duflo,Abhijit Banerjee,same-name decoy,decoy,No conflict found,Potential,false,,NAME_ONLY SAME_NAME_OTHER_PERSON,"same name on a candidate paper (1, NAME_ONLY)",0,11,719
+56,Frances Arnold,Xiongyi Huang,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,13,1157
+57,Brian Nosek,David Mellor,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,14,1067
+58,Carolyn Bertozzi,Benjamin Smith,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,18,1436
+59,Jennifer Doudna,Jennifer Hamilton,same-name decoy,decoy,No conflict found,No conflict found,true,,SAME_NAME_OTHER_PERSON,"No shared works, shared institutions or declarations found",0,12,952
+
+# recall,29/29 scored co-author pairs (29 total),target >= 85%
+# conflicts on unrelated or decoy pairs,0 of 30,target 0
+# result matches expected,54/59
+# API calls,796 (0 fresh; 796 from cache)

@@ -5,7 +5,7 @@ const passcodeSchema = z.object({ passcode: z.string().min(1).max(200) });
 
 /** B5: run the 14 rules self-test cases. Pure, no network calls. Behind the research passcode. */
 export const rulesSelftest = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => passcodeSchema.parse(input))
+  .validator((input: unknown) => passcodeSchema.parse(input))
   .handler(async ({ data }) => {
     const { passcodeError } = await import("@/lib/passcode.server");
     const denied = passcodeError(data.passcode);
@@ -21,7 +21,7 @@ const orcid = z.string().regex(/^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/);
  * to the case tables. Behind the research passcode.
  */
 export const regressionPair = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => passcodeSchema.extend({ candidateOrcid: orcid, reviewerOrcid: orcid, reviewerName: z.string().trim().min(1).max(150) }).parse(input))
+  .validator((input: unknown) => passcodeSchema.extend({ candidateOrcid: orcid, reviewerOrcid: orcid, reviewerName: z.string().trim().min(1).max(150) }).parse(input))
   .handler(async ({ data }) => {
     const { passcodeError } = await import("@/lib/passcode.server");
     const denied = passcodeError(data.passcode);
