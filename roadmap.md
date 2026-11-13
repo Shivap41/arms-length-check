@@ -13,3 +13,8 @@
 - [x] Add fictional candidate and reviewer profiles, paper samples, and choice-specific results.
 - [x] Connect demo loading and scenario access through the screening service.
 - [x] Test all correct outcomes, ambiguous identities, and demo loading in the page.
+
+# Confirm reviewer identities
+- [x] Add ordered reviewer rows, profile selection, profile merging, paste, and undo.
+- [x] Add keyboard controls, live progress, and a gated results-step destination.
+- [x] Test identity changes and verify the full 15-reviewer flow at desktop widths.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { demoScenario, demoChoiceKey, type DemoAnswer, type DemoResult, type DemoReviewer, type DemoScenario } from "./demoScenario";
+import { demoScenario, demoChoiceKey, type DemoAnswer, type DemoProfile, type DemoResult, type DemoReviewer, type DemoScenario } from "./demoScenario";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
 export const identitySchema = z.string().trim().max(500, "Profile link is too long.").refine(value => {
@@ -21,14 +21,18 @@ export const reviewerSchema = z.object({
 export type ReviewerInput = z.input<typeof reviewerSchema>;
 export type Reviewer = z.output<typeof reviewerSchema> & { id: string };
 export type CaseRecord = { id: string; title: string; candidate: string; subtitle: string; candidateConfirmed: boolean; candidateProfile?: DemoScenario["candidate"] };
-export type IdentityChoice = "confirmed" | "not-a-match" | "unsure" | DemoAnswer;
+export type IdentityChoice = "confirmed" | "not-a-match" | "unsure" | "undo" | "undo-last" | DemoAnswer | { action: "paste-profile"; link: string };
 export type ScreeningDecision = "invite" | "exclude" | "needs-review";
-export type Screening = { id: string; caseId: string; reviewers: Reviewer[]; identityChoices: Record<string, IdentityChoice>; decisions: Record<string, ScreeningDecision>; results: Record<string, DemoResult> };
+export type Screening = { id: string; caseId: string; reviewers: Reviewer[]; identityChoices: Record<string, IdentityChoice>; identitySources: Record<string, "orcid" | "chair">; decisions: Record<string, ScreeningDecision>; results: Record<string, DemoResult>; resultsReady: boolean };
+export type IdentityProfile = DemoProfile;
+export type IdentityReview = { reviewer: Reviewer; brief: string; options: IdentityProfile[]; matchedProfiles: IdentityProfile[]; status: "needs-you" | "orcid" | "chair" | "cant-tell"; selectedIds: string[] };
+type IdentityHistory = { reviewerId: string; choice: IdentityChoice | undefined; source: "orcid" | "chair" | undefined; result: DemoResult | undefined };
 
 // Browser-session memory only; no storage, network calls, or server mutations.
 const caseRecord: CaseRecord = { id: "ortiz-2027", title: "Tenure review — Dr. Maya Ortiz", candidate: "Dr. Maya Ortiz", subtitle: "Associate Professor of Chemistry → Professor with tenure · Northbridge University · Cycle 2026–27", candidateConfirmed: false };
 let reviewers: Reviewer[] = [];
 const screenings = new Map<string, Screening>();
+const identityHistory = new Map<string, IdentityHistory[]>();
 let sequence = 0;
 const identifier = z.string().trim().min(1).max(150);
 function requireCase(caseId: string) {
@@ -47,9 +51,17 @@ export function addReviewers(caseId: string, rows: ReviewerInput[]): Reviewer[] 
 export function removeReviewer(caseId: string, id: string): void { browserOnly(); requireCase(caseId); identifier.parse(id); reviewers = reviewers.filter(row => row.id !== id); }
 export function setCandidateConfirmed(caseId: string, confirmed: boolean): void { browserOnly(); requireCase(caseId); caseRecord.candidateConfirmed = z.boolean().parse(confirmed); }
 export function canStartScreening(count: number, candidateConfirmed: boolean): boolean { return count > 0 && candidateConfirmed; }
-export function startScreening(caseId: string): string {
+export function startScreening(caseId: string, existingScreeningId?: string): string {
   browserOnly(); requireCase(caseId);
   if (!canStartScreening(reviewers.length, caseRecord.candidateConfirmed)) throw new Error("Add a reviewer and confirm the candidate before checking for conflicts.");
+  if (existingScreeningId) {
+    identifier.parse(existingScreeningId);
+    const current = screenings.get(existingScreeningId);
+    if (!current || current.caseId !== caseId) throw new Error("Screening not found.");
+    if (!canReviewResults(existingScreeningId)) throw new Error("Handle every reviewer identity before seeing results.");
+    current.resultsReady = true;
+    return current.id;
+  }
   const id = `screening-${++sequence}`;
   const selectedReviewers = listReviewers(caseId);
   const identityChoices: Record<string, IdentityChoice> = {};
@@ -61,7 +73,10 @@ export function startScreening(caseId: string): string {
       results[row.id] = resolveDemoResult(demo, demo.correctAnswer);
     }
   }
-  screenings.set(id, { id, caseId, reviewers: selectedReviewers, identityChoices, decisions: {}, results });
+  const identitySources: Screening["identitySources"] = {};
+  for (const reviewerId of Object.keys(identityChoices)) identitySources[reviewerId] = "orcid";
+  screenings.set(id, { id, caseId, reviewers: selectedReviewers, identityChoices, identitySources, decisions: {}, results, resultsReady: false });
+  identityHistory.set(id, []);
   return id;
 }
 export function getScreening(screeningId: string): Screening | undefined {
@@ -79,28 +94,90 @@ const demoAnswerSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("select-profiles"), profileIds: z.array(identifier).min(1).max(3) }),
   z.object({ action: z.literal("paste-orcid"), orcid: identitySchema.refine(value => orcidPattern.test(value), "Enter a formatted ORCID iD.") }),
   z.object({ action: z.literal("cant-tell") }),
+  z.object({ action: z.literal("paste-profile"), link: identitySchema.refine(value => value.length > 0, "Enter an ORCID or profile link.") }),
 ]);
 function findDemoReviewer(row: Reviewer): DemoReviewer | undefined {
   return demoScenario.reviewers.find(demo => demo.id === row.id && demo.typedName === row.name && demo.typedInstitution === row.institution);
 }
 function resolveDemoResult(demo: DemoReviewer, answer: DemoAnswer): DemoResult {
-  const key = answer.action === "select-profiles" ? demoChoiceKey(answer.profileIds) : answer.action === "paste-orcid" ? `orcid:${answer.orcid}` : "cant-tell";
+  const orcidMatch = answer.action === "paste-orcid" ? demo.options.find(profile => profile.orcid === answer.orcid) : undefined;
+  const key = answer.action === "select-profiles" ? demoChoiceKey(answer.profileIds) : answer.action === "paste-orcid" ? orcidMatch?.id ?? `orcid:${answer.orcid}` : "cant-tell";
   const result = demo.resultsByChoice[key] ?? (answer.action === "paste-orcid" ? demo.resultsByChoice["cant-tell"] : demo.resultsByChoice["wrong-pick"]);
   if (!result) throw new Error("Demo outcome unavailable.");
   return structuredClone(result);
 }
 export function confirmIdentity(screeningId: string, nameId: string, choice: IdentityChoice): void {
   const screening = requireScreening(screeningId, nameId);
-  const parsed = z.union([z.enum(["confirmed", "not-a-match", "unsure"]), demoAnswerSchema]).parse(choice);
+  const parsed = z.union([z.enum(["confirmed", "not-a-match", "unsure", "undo", "undo-last"]), demoAnswerSchema]).parse(choice);
+  const history = identityHistory.get(screeningId) ?? [];
+  if (parsed === "undo-last") {
+    const last = history.pop();
+    if (!last) return;
+    if (last.choice) screening.identityChoices[last.reviewerId] = structuredClone(last.choice); else delete screening.identityChoices[last.reviewerId];
+    if (last.source) screening.identitySources[last.reviewerId] = last.source; else delete screening.identitySources[last.reviewerId];
+    if (last.result) screening.results[last.reviewerId] = structuredClone(last.result); else delete screening.results[last.reviewerId];
+    screening.resultsReady = false;
+    return;
+  }
   const row = screening.reviewers.find(reviewer => reviewer.id === nameId);
   const demo = row ? findDemoReviewer(row) : undefined;
+  let normalized: IdentityChoice = parsed;
+  let resolved: DemoResult | undefined;
   if (demo) {
-    const answer = typeof parsed === "string" ? parsed === "confirmed" && demo.autoConfirmed ? demo.correctAnswer : { action: "cant-tell" as const } : parsed;
+    let answer: DemoAnswer;
+    if (typeof parsed === "object" && parsed.action === "paste-profile") {
+      const profile = matchProfileLink(demo, parsed.link);
+      if (!profile) throw new Error("No matching profile in this fictional demo. Check the CV or choose Can't tell.");
+      answer = profile.orcid ? { action: "paste-orcid", orcid: profile.orcid } : { action: "select-profiles", profileIds: [profile.id] };
+      normalized = answer;
+    } else answer = typeof parsed === "string" ? parsed === "confirmed" && demo.autoConfirmed ? demo.correctAnswer : { action: "cant-tell" as const } : parsed;
     if (answer.action === "select-profiles" && answer.profileIds.some(id => !demo.options.some(profile => profile.id === id))) throw new Error("Choose a profile offered for this reviewer.");
-    screening.results[nameId] = resolveDemoResult(demo, answer);
+    resolved = resolveDemoResult(demo, answer);
+  } else if (typeof parsed === "object" && parsed.action !== "cant-tell") {
+    throw new Error("No matching profile in this fictional demo. Choose Can't tell.");
+  } else resolved = { status: "Insufficient data", rule: null, explanation: "Identity not confirmed", sharedPapers: [], wrongPerson: false };
+  history.push({ reviewerId: nameId, choice: screening.identityChoices[nameId], source: screening.identitySources[nameId], result: screening.results[nameId] });
+  identityHistory.set(screeningId, history);
+  screening.resultsReady = false;
+  if (parsed === "undo") {
+    delete screening.identityChoices[nameId]; delete screening.identitySources[nameId]; delete screening.results[nameId];
+    return;
   }
-  screening.identityChoices[nameId] = structuredClone(parsed);
+  if (resolved) screening.results[nameId] = resolved;
+  screening.identityChoices[nameId] = structuredClone(normalized);
+  screening.identitySources[nameId] = "chair";
 }
+function matchProfileLink(demo: DemoReviewer, value: string): DemoProfile | undefined {
+  const profiles = [...demo.options, ...demo.additionalProfiles];
+  const input = value.trim();
+  if (orcidPattern.test(input)) return profiles.find(profile => profile.orcid === input);
+  try {
+    const url = new URL(input);
+    const profileId = url.pathname.replace(/^\//, "").replace(/\/$/, "");
+    return url.hostname.endsWith("orcid.org") ? profiles.find(profile => profile.orcid === profileId) : profiles.find(profile => profile.id === profileId);
+  } catch { return undefined; }
+}
+export function getIdentityReviews(screeningId: string): IdentityReview[] {
+  const screening = getScreening(screeningId);
+  if (!screening) return [];
+  return screening.reviewers.map(reviewer => {
+    const demo = findDemoReviewer(reviewer);
+    const choice = screening.identityChoices[reviewer.id];
+    const profiles = demo ? [...demo.options, ...demo.additionalProfiles] : [];
+    const selectedIds = typeof choice === "object" ? choice.action === "select-profiles" ? choice.profileIds : choice.action === "paste-orcid" ? profiles.filter(profile => profile.orcid === choice.orcid).map(profile => profile.id) : [] : [];
+    const cantTell = choice === "unsure" || choice === "not-a-match" || (typeof choice === "object" && choice.action === "cant-tell");
+    const status: IdentityReview["status"] = !choice ? "needs-you" : cantTell ? "cant-tell" : screening.identitySources[reviewer.id] === "orcid" ? "orcid" : selectedIds.length ? "chair" : "cant-tell";
+    return { reviewer, brief: demo?.brief ?? "No profile data available in this fictional prototype.", options: demo?.options ?? [], matchedProfiles: profiles.filter(profile => selectedIds.includes(profile.id)), selectedIds, status };
+  });
+}
+export function canReviewResults(screeningId: string): boolean { const rows = getIdentityReviews(screeningId); return rows.length > 0 && rows.every(row => row.status !== "needs-you"); }
+export function undoLastIdentity(screeningId: string): string | undefined {
+  const last = identityHistory.get(screeningId)?.at(-1);
+  if (!last) return undefined;
+  confirmIdentity(screeningId, last.reviewerId, "undo-last");
+  return last.reviewerId;
+}
+export function hasIdentityUndo(screeningId: string): boolean { return Boolean(identityHistory.get(screeningId)?.length); }
 export function recordDecision(screeningId: string, nameId: string, decision: ScreeningDecision): void { const screening = requireScreening(screeningId, nameId); screening.decisions[nameId] = z.enum(["invite", "exclude", "needs-review"]).parse(decision); }
 export function loadDemoReviewers(caseId: string): { loaded: boolean; message: string } {
   browserOnly(); requireCase(caseId);

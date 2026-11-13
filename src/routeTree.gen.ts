@@ -17,6 +17,8 @@ import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
 import { Route as CasesCaseIdScreeningRouteImport } from './routes/cases.$caseId_.screening'
+import { Route as CasesCaseIdScreeningResultsRouteImport } from './routes/cases.$caseId_.screening_.results'
+import { Route as CasesCaseIdScreeningProfileProfileIdRouteImport } from './routes/cases.$caseId_.screening_.profile.$profileId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +60,18 @@ const CasesCaseIdScreeningRoute = CasesCaseIdScreeningRouteImport.update({
   path: '/$caseId/screening',
   getParentRoute: () => CasesRoute,
 } as any)
+const CasesCaseIdScreeningResultsRoute =
+  CasesCaseIdScreeningResultsRouteImport.update({
+    id: '/$caseId_/screening_/results',
+    path: '/$caseId/screening/results',
+    getParentRoute: () => CasesRoute,
+  } as any)
+const CasesCaseIdScreeningProfileProfileIdRoute =
+  CasesCaseIdScreeningProfileProfileIdRouteImport.update({
+    id: '/$caseId_/screening_/profile/$profileId',
+    path: '/$caseId/screening/profile/$profileId',
+    getParentRoute: () => CasesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +82,8 @@ export interface FileRoutesByFullPath {
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases/': typeof CasesIndexRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
+  '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
+  '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +93,8 @@ export interface FileRoutesByTo {
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases': typeof CasesIndexRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
+  '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
+  '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -88,6 +106,8 @@ export interface FileRoutesById {
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/cases/': typeof CasesIndexRoute
   '/cases/$caseId_/screening': typeof CasesCaseIdScreeningRoute
+  '/cases/$caseId_/screening_/results': typeof CasesCaseIdScreeningResultsRoute
+  '/cases/$caseId_/screening_/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/cases/$caseId'
     | '/cases/'
     | '/cases/$caseId/screening'
+    | '/cases/$caseId/screening/results'
+    | '/cases/$caseId/screening/profile/$profileId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/cases/$caseId'
     | '/cases'
     | '/cases/$caseId/screening'
+    | '/cases/$caseId/screening/results'
+    | '/cases/$caseId/screening/profile/$profileId'
   id:
     | '__root__'
     | '/'
@@ -119,6 +143,8 @@ export interface FileRouteTypes {
     | '/cases/$caseId'
     | '/cases/'
     | '/cases/$caseId_/screening'
+    | '/cases/$caseId_/screening_/results'
+    | '/cases/$caseId_/screening_/profile/$profileId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -187,6 +213,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CasesCaseIdScreeningRouteImport
       parentRoute: typeof CasesRoute
     }
+    '/cases/$caseId_/screening_/results': {
+      id: '/cases/$caseId_/screening_/results'
+      path: '/$caseId/screening/results'
+      fullPath: '/cases/$caseId/screening/results'
+      preLoaderRoute: typeof CasesCaseIdScreeningResultsRouteImport
+      parentRoute: typeof CasesRoute
+    }
+    '/cases/$caseId_/screening_/profile/$profileId': {
+      id: '/cases/$caseId_/screening_/profile/$profileId'
+      path: '/$caseId/screening/profile/$profileId'
+      fullPath: '/cases/$caseId/screening/profile/$profileId'
+      preLoaderRoute: typeof CasesCaseIdScreeningProfileProfileIdRouteImport
+      parentRoute: typeof CasesRoute
+    }
   }
 }
 
@@ -194,12 +234,17 @@ interface CasesRouteChildren {
   CasesCaseIdRoute: typeof CasesCaseIdRoute
   CasesIndexRoute: typeof CasesIndexRoute
   CasesCaseIdScreeningRoute: typeof CasesCaseIdScreeningRoute
+  CasesCaseIdScreeningResultsRoute: typeof CasesCaseIdScreeningResultsRoute
+  CasesCaseIdScreeningProfileProfileIdRoute: typeof CasesCaseIdScreeningProfileProfileIdRoute
 }
 
 const CasesRouteChildren: CasesRouteChildren = {
   CasesCaseIdRoute: CasesCaseIdRoute,
   CasesIndexRoute: CasesIndexRoute,
   CasesCaseIdScreeningRoute: CasesCaseIdScreeningRoute,
+  CasesCaseIdScreeningResultsRoute: CasesCaseIdScreeningResultsRoute,
+  CasesCaseIdScreeningProfileProfileIdRoute:
+    CasesCaseIdScreeningProfileProfileIdRoute,
 }
 
 const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)

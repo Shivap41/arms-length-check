@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { getScreening, type Screening } from "@/data/screeningService";
+import { ConfirmReviewers } from "@/components/confirm-reviewers";
 
 export const Route = createFileRoute("/cases/$caseId_/screening")({
   validateSearch: z.object({ screeningId: z.string().max(150).optional() }),
@@ -20,5 +21,6 @@ function ScreeningPage() {
   const { screeningId } = Route.useSearch();
   const [screening, setScreening] = useState<Screening>();
   useEffect(() => { setScreening(screeningId ? getScreening(screeningId) : undefined); }, [screeningId]);
-  return <><header className="case-header"><h1>Conflict screening</h1><p>Tenure review — Dr. Maya Ortiz</p></header><Link to="/cases/$caseId" params={{ caseId }} className="back-link">Back to external evaluations</Link>{screening?.caseId === caseId ? <section className="screening-placeholder"><h2>Reviewers submitted</h2><ul>{screening.reviewers.map(row => <li key={row.id}>{row.name} · {row.institution}</li>)}</ul><p>Conflict results are not part of this prototype yet.</p></section> : <p>No screening available. Add reviewers and check for conflicts from the case page.</p>}</>;
+  if (screening?.caseId === caseId) return <ConfirmReviewers key={screening.id} screeningId={screening.id} caseId={caseId} />;
+  return <><header className="case-header"><h1>Check for conflicts</h1></header><p>No screening available. Add reviewers and check for conflicts from the case page.</p><Link to="/cases/$caseId" params={{ caseId }} className="back-link">Back to external evaluations</Link></>;
 }
