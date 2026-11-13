@@ -13,9 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CasesRouteImport } from './routes/cases'
 import { Route as CommitteesRouteImport } from './routes/committees'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SessionRouteImport } from './routes/session'
 import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
+import { Route as SessionIndexRouteImport } from './routes/session.index'
+import { Route as SessionBriefRouteImport } from './routes/session.brief'
+import { Route as SessionResultsRouteImport } from './routes/session.results'
 import { Route as CasesCaseIdScreeningRouteImport } from './routes/cases.$caseId_.screening'
 import { Route as CasesCaseIdScreeningResultsRouteImport } from './routes/cases.$caseId_.screening_.results'
 import { Route as CasesCaseIdScreeningProfileProfileIdRouteImport } from './routes/cases.$caseId_.screening_.profile.$profileId'
@@ -40,6 +44,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SessionRoute = SessionRouteImport.update({
+  id: '/session',
+  path: '/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
@@ -54,6 +63,21 @@ const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
   id: '/$caseId',
   path: '/$caseId',
   getParentRoute: () => CasesRoute,
+} as any)
+const SessionIndexRoute = SessionIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SessionRoute,
+} as any)
+const SessionBriefRoute = SessionBriefRouteImport.update({
+  id: '/brief',
+  path: '/brief',
+  getParentRoute: () => SessionRoute,
+} as any)
+const SessionResultsRoute = SessionResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => SessionRoute,
 } as any)
 const CasesCaseIdScreeningRoute = CasesCaseIdScreeningRouteImport.update({
   id: '/$caseId_/screening',
@@ -78,9 +102,13 @@ export interface FileRoutesByFullPath {
   '/cases': typeof CasesRouteWithChildren
   '/committees': typeof CommitteesRoute
   '/reports': typeof ReportsRoute
+  '/session': typeof SessionRouteWithChildren
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
+  '/session/brief': typeof SessionBriefRoute
+  '/session/results': typeof SessionResultsRoute
   '/cases/': typeof CasesIndexRoute
+  '/session/': typeof SessionIndexRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
@@ -91,7 +119,10 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
+  '/session/brief': typeof SessionBriefRoute
+  '/session/results': typeof SessionResultsRoute
   '/cases': typeof CasesIndexRoute
+  '/session': typeof SessionIndexRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
@@ -102,9 +133,13 @@ export interface FileRoutesById {
   '/cases': typeof CasesRouteWithChildren
   '/committees': typeof CommitteesRoute
   '/reports': typeof ReportsRoute
+  '/session': typeof SessionRouteWithChildren
   '/templates': typeof TemplatesRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
+  '/session/brief': typeof SessionBriefRoute
+  '/session/results': typeof SessionResultsRoute
   '/cases/': typeof CasesIndexRoute
+  '/session/': typeof SessionIndexRoute
   '/cases/$caseId_/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId_/screening_/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId_/screening_/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
@@ -116,9 +151,13 @@ export interface FileRouteTypes {
     | '/cases'
     | '/committees'
     | '/reports'
+    | '/session'
     | '/templates'
     | '/cases/$caseId'
+    | '/session/brief'
+    | '/session/results'
     | '/cases/'
+    | '/session/'
     | '/cases/$caseId/screening'
     | '/cases/$caseId/screening/results'
     | '/cases/$caseId/screening/profile/$profileId'
@@ -129,7 +168,10 @@ export interface FileRouteTypes {
     | '/reports'
     | '/templates'
     | '/cases/$caseId'
+    | '/session/brief'
+    | '/session/results'
     | '/cases'
+    | '/session'
     | '/cases/$caseId/screening'
     | '/cases/$caseId/screening/results'
     | '/cases/$caseId/screening/profile/$profileId'
@@ -139,9 +181,13 @@ export interface FileRouteTypes {
     | '/cases'
     | '/committees'
     | '/reports'
+    | '/session'
     | '/templates'
     | '/cases/$caseId'
+    | '/session/brief'
+    | '/session/results'
     | '/cases/'
+    | '/session/'
     | '/cases/$caseId_/screening'
     | '/cases/$caseId_/screening_/results'
     | '/cases/$caseId_/screening_/profile/$profileId'
@@ -152,6 +198,7 @@ export interface RootRouteChildren {
   CasesRoute: typeof CasesRouteWithChildren
   CommitteesRoute: typeof CommitteesRoute
   ReportsRoute: typeof ReportsRoute
+  SessionRoute: typeof SessionRouteWithChildren
   TemplatesRoute: typeof TemplatesRoute
 }
 
@@ -185,6 +232,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/session': {
+      id: '/session'
+      path: '/session'
+      fullPath: '/session'
+      preLoaderRoute: typeof SessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/templates': {
       id: '/templates'
       path: '/templates'
@@ -205,6 +259,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/cases/$caseId'
       preLoaderRoute: typeof CasesCaseIdRouteImport
       parentRoute: typeof CasesRoute
+    }
+    '/session/': {
+      id: '/session/'
+      path: '/'
+      fullPath: '/session/'
+      preLoaderRoute: typeof SessionIndexRouteImport
+      parentRoute: typeof SessionRoute
+    }
+    '/session/brief': {
+      id: '/session/brief'
+      path: '/brief'
+      fullPath: '/session/brief'
+      preLoaderRoute: typeof SessionBriefRouteImport
+      parentRoute: typeof SessionRoute
+    }
+    '/session/results': {
+      id: '/session/results'
+      path: '/results'
+      fullPath: '/session/results'
+      preLoaderRoute: typeof SessionResultsRouteImport
+      parentRoute: typeof SessionRoute
     }
     '/cases/$caseId_/screening': {
       id: '/cases/$caseId_/screening'
@@ -249,11 +324,27 @@ const CasesRouteChildren: CasesRouteChildren = {
 
 const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)
 
+interface SessionRouteChildren {
+  SessionBriefRoute: typeof SessionBriefRoute
+  SessionResultsRoute: typeof SessionResultsRoute
+  SessionIndexRoute: typeof SessionIndexRoute
+}
+
+const SessionRouteChildren: SessionRouteChildren = {
+  SessionBriefRoute: SessionBriefRoute,
+  SessionResultsRoute: SessionResultsRoute,
+  SessionIndexRoute: SessionIndexRoute,
+}
+
+const SessionRouteWithChildren =
+  SessionRoute._addFileChildren(SessionRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CasesRoute: CasesRouteWithChildren,
   CommitteesRoute: CommitteesRoute,
   ReportsRoute: ReportsRoute,
+  SessionRoute: SessionRouteWithChildren,
   TemplatesRoute: TemplatesRoute,
 }
 export const routeTree = rootRouteImport

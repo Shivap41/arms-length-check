@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Mail, Search, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { getActiveSession, SESSION_CHANGE_EVENT, type ActiveSession } from "@/lib/research-session";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -18,11 +19,19 @@ function Mark() {
 
 export function FacultyShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [session, setSession] = useState<ActiveSession>();
+  useEffect(() => {
+    const sync = () => setSession(getActiveSession());
+    sync();
+    window.addEventListener(SESSION_CHANGE_EVENT, sync);
+    return () => window.removeEventListener(SESSION_CHANGE_EVENT, sync);
+  }, []);
   return (
     <div className="faculty-app">
       <header className="faculty-header">
         <Button variant="header" size="icon" className="shell-close" aria-label={sidebarOpen ? "Collapse navigation" : "Expand navigation"} title={sidebarOpen ? "Collapse navigation" : "Expand navigation"} onClick={() => setSidebarOpen(!sidebarOpen)}><X /></Button>
         <Link to="/" className="faculty-brand"><Mark /><span>Faculty Review</span></Link>
+        {session && <span className="session-badge" title={`Research session ${session.participantCode}`}>Session mode · {session.participantCode}</span>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild><Button variant="header" className="user-menu">Dr. Lena Hoffmann<ChevronDown /></Button></DropdownMenuTrigger>
           <DropdownMenuContent align="end"><DropdownMenuItem>Profile</DropdownMenuItem><DropdownMenuItem>Sign out</DropdownMenuItem></DropdownMenuContent>

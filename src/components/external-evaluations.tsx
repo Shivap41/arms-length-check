@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Info, Plus, Trash2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logResearchEvent } from "@/lib/research-session";
 import { Checkbox } from "@/components/ui/checkbox";
 import { addReviewers, canStartScreening, getCase, listReviewers, loadDemoReviewers, parseReviewerList, removeReviewer, reviewerSchema, setCandidateConfirmed, startScreening, type CaseRecord } from "@/data/screeningService";
 
@@ -37,6 +38,7 @@ export function ExternalEvaluations({ caseRecord }: { caseRecord: CaseRecord }) 
   }
   async function checkConflicts() {
     const screeningId = startScreening(caseRecord.id);
+    logResearchEvent("screening_started");
     await navigate({ to: "/cases/$caseId/screening", params: { caseId: caseRecord.id }, search: { screeningId } });
   }
   return <div className="evaluations-layout"><section className="reviewer-workspace" aria-labelledby="reviewer-title">

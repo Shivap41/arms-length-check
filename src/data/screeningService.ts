@@ -245,6 +245,12 @@ export function getAuditRecord(screeningId: string): AuditRecord {
     return { name: row.reviewer.name, institution: row.reviewer.institution, identityMethod, result: row.result.status, reason: row.reason, evidence, decision };
   }) };
 }
+/** Research sessions: return the demo case to its untouched starting state. */
+export function resetDemoCase(caseId: string): void {
+  browserOnly(); requireCase(caseId);
+  reviewers = []; screenings.clear(); identityHistory.clear(); nameMatches.clear();
+  caseRecord.candidateConfirmed = false; delete caseRecord.candidateProfile;
+}
 export function loadDemoReviewers(caseId: string): { loaded: boolean; message: string } {
   browserOnly(); requireCase(caseId);
   reviewers = demoScenario.reviewers.map(demo => ({ ...reviewerSchema.parse({ name: demo.typedName, institution: demo.typedInstitution, identity: demo.typedOrcid ?? "" }), id: demo.id }));
