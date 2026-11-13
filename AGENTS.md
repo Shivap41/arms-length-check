@@ -42,3 +42,4 @@ use the editor.
 - Record chair decisions and audit snapshots through screeningService in browser memory; invalidate decisions when identity or evidence changes so exports never contain stale approvals.
 - Generate audit downloads as escaped standalone HTML from the service snapshot, keeping exports usable offline without server dependencies.
 - Research-session logging writes anonymous, insert-only rows from the browser through a background queue in src/lib/research-session.ts so it never blocks the UI; results are read only by a passcode-checked server function and computed by pure helpers in src/lib/session-metrics.ts.
+- Simulated check latency, stages, profile-search waits and failures live only in screeningService.ts (runCheck/searchProfiles); components subscribe via subscribeChecks so a real backend can replace the timing without UI changes.

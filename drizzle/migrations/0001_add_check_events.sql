@@ -1,0 +1,2 @@
+ALTER TABLE public.identity_events DROP CONSTRAINT IF EXISTS identity_events_event_check;
+ALTER TABLE public.identity_events ADD CONSTRAINT identity_events_event_check CHECK (event IN ('row_opened','card_picked','second_profile_added','orcid_pasted','cant_tell','undo','changed_later','screening_started','session_finished','check_started','check_finished','check_failed','results_wait_started','results_wait_finished'));

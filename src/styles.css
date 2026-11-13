@@ -389,3 +389,35 @@
   .faculty-header, .faculty-sidebar, .contact-button, .no-print { display: none !important; }
   .faculty-main { padding: 0 !important; }
 }
+
+/* Simulated live checks */
+.check-status { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: var(--muted-foreground); }
+.identity-row > .check-status { margin: 0 16px 10px; }
+.check-status svg { width: 14px; height: 14px; flex-shrink: 0; }
+.check-failed { color: var(--foreground); }
+.check-failed > svg { color: var(--destructive); }
+.check-spinner { animation: check-spin 1s linear infinite; }
+@keyframes check-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .check-spinner { animation: none; } }
+.identity-profile-skeleton { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 4px; min-height: 220px; }
+.skeleton-line { height: 12px; }
+.skeleton-title { height: 16px; width: 70%; }
+.skeleton-short { width: 45%; }
+.skeleton-block { flex: 1; min-height: 80px; }
+.status-failed { display: inline-flex; align-items: center; gap: 5px; color: var(--foreground); border: 1px dashed var(--destructive); background: var(--background); }
+.status-failed svg { width: 14px; height: 14px; color: var(--destructive); }
+.check-progress { max-width: 720px; border: 1px solid var(--border); border-radius: 4px; padding: 24px; }
+.check-progress h2 { font-size: 20px; font-weight: 500; margin: 0 0 16px; }
+.check-progress-bar { height: 10px; }
+.check-progress-count { margin: 10px 0 4px; font-weight: 500; }
+.check-progress-note { color: var(--muted-foreground); font-size: 14px; margin: 0 0 18px; }
+.check-progress-list { list-style: none; margin: 0; padding: 0; }
+.check-progress-row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.check-progress-stage { display: inline-flex; align-items: center; gap: 6px; color: var(--muted-foreground); }
+.check-progress-stage svg { width: 15px; height: 15px; }
+.check-stage-done .check-progress-stage { color: var(--foreground); }
+.check-stage-failed .check-progress-stage svg { color: var(--destructive); }
+.session-settings { border: 0; padding: 0; margin: 0; }
+.session-settings legend { font-weight: 500; margin-bottom: 8px; }
+.session-radio, .session-switch { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.session-switch label { display: flex; flex-direction: column; }

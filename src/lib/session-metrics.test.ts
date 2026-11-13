@@ -37,3 +37,13 @@ describe("session metrics", () => {
     expect(metricsToCsv([m], computeTotals([m])).split("\r\n")).toHaveLength(3);
   });
 });
+
+describe("waiting for checks", () => {
+  it("reports chair time without the check wait", () => {
+    const at = (event: string, ms: number): EventRow => ({ session_id: "s1", reviewer_id: null, event, option_position: null, profile_id: null, selection: null, ms_since_row_opened: null, ms_since_session_start: ms, created_at: "" });
+    const m = computeSessionMetrics(session, [at("screening_started", 1000), at("session_finished", 200000), at("results_wait_started", 200100), at("results_wait_finished", 215100)]);
+    expect(m.waitMs).toBe(15000);
+    expect(m.totalMs).toBe(214100);
+    expect(m.chairMs).toBe(199100);
+  });
+});

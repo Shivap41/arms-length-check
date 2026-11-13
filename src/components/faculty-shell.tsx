@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Mail, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import { getActiveSession, SESSION_CHANGE_EVENT, type ActiveSession } from "@/lib/research-session";
+import { getActiveSession, logResearchEvent, SESSION_CHANGE_EVENT, type ActiveSession } from "@/lib/research-session";
+import { onCheckEvent } from "@/data/screeningService";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -26,6 +27,7 @@ export function FacultyShell({ children }: { children: ReactNode }) {
     window.addEventListener(SESSION_CHANGE_EVENT, sync);
     return () => window.removeEventListener(SESSION_CHANGE_EVENT, sync);
   }, []);
+  useEffect(() => onCheckEvent(event => logResearchEvent(event.type, { reviewerId: event.reviewerId })), []);
   return (
     <div className="faculty-app">
       <header className="faculty-header">

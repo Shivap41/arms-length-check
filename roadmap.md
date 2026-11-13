@@ -31,3 +31,6 @@
 - [x] Session start page, printable reviewer notes, header badge.
 - [x] Non-blocking identity event logging to the database.
 - [x] Passcode-protected results with accuracy, timings, and CSV export.
+
+## Live-feeling checks
+- [x] Seeded latency setting, early checks, skeletons, progress screen, failure + retry, wait logging

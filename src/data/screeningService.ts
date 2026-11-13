@@ -27,7 +27,7 @@ export type Screening = { id: string; caseId: string; reviewers: Reviewer[]; ide
 export type IdentityProfile = DemoProfile;
 export type ResultStatus = DemoResult["status"];
 export type ResultPaper = DemoResult["sharedPapers"][number];
-export type ResultRow = { reviewer: Reviewer; result: DemoResult; source: "ORCID" | "You"; reason: string; profiles: IdentityProfile[]; candidateProfile: IdentityProfile; decoyPapers: ResultPaper[]; nameMatch: "confirmed" | "different" | undefined };
+export type ResultRow = { reviewer: Reviewer; result: DemoResult; checkFailed: boolean; source: "ORCID" | "You"; reason: string; profiles: IdentityProfile[]; candidateProfile: IdentityProfile; decoyPapers: ResultPaper[]; nameMatch: "confirmed" | "different" | undefined };
 export const resultStatuses: ResultStatus[] = ["Conflict", "Potential", "Insufficient data", "No conflict found"];
 export type IdentityReview = { reviewer: Reviewer; brief: string; options: IdentityProfile[]; matchedProfiles: IdentityProfile[]; status: "needs-you" | "orcid" | "chair" | "cant-tell"; selectedIds: string[] };
 type IdentityHistory = { reviewerId: string; choice: IdentityChoice | undefined; source: "orcid" | "chair" | undefined; result: DemoResult | undefined };
@@ -82,6 +82,7 @@ export function startScreening(caseId: string, existingScreeningId?: string): st
   for (const reviewerId of Object.keys(identityChoices)) identitySources[reviewerId] = "orcid";
   screenings.set(id, { id, caseId, reviewers: selectedReviewers, identityChoices, identitySources, decisions: {}, results, resultsReady: false });
   identityHistory.set(id, []);
+  for (const reviewerId of Object.keys(identityChoices)) runCheck(id, reviewerId);
   return id;
 }
 export function getScreening(screeningId: string): Screening | undefined {
@@ -123,6 +124,7 @@ export function confirmIdentity(screeningId: string, nameId: string, choice: Ide
     if (last.source) screening.identitySources[last.reviewerId] = last.source; else delete screening.identitySources[last.reviewerId];
     if (last.result) screening.results[last.reviewerId] = structuredClone(last.result); else delete screening.results[last.reviewerId];
     screening.resultsReady = false;
+    if (last.result) runCheck(screeningId, last.reviewerId); else cancelCheck(screeningId, last.reviewerId);
     return;
   }
   const row = screening.reviewers.find(reviewer => reviewer.id === nameId);
@@ -150,11 +152,13 @@ export function confirmIdentity(screeningId: string, nameId: string, choice: Ide
   screening.resultsReady = false;
   if (parsed === "undo") {
     delete screening.identityChoices[nameId]; delete screening.identitySources[nameId]; delete screening.results[nameId];
+    cancelCheck(screeningId, nameId);
     return;
   }
   if (resolved) screening.results[nameId] = resolved;
   screening.identityChoices[nameId] = structuredClone(normalized);
   screening.identitySources[nameId] = "chair";
+  runCheck(screeningId, nameId);
 }
 function matchProfileLink(demo: DemoReviewer, value: string): DemoProfile | undefined {
   const profiles = [...demo.options, ...demo.additionalProfiles];
@@ -210,12 +214,12 @@ export function getResultRows(screening: Screening): ResultRow[] {
     else if (result.sharedPapers.some(paper => paper.authorIdMissing) && result.status === "Potential") reason = "Same name on a shared paper — check it's this person";
     else if (result.sharedPapers.some(paper => paper.authorCount === 120)) reason = "Large team paper (120 authors, 2024)";
     else if (result.sharedPapers.length && result.status !== "No conflict found") reason = `Co-wrote ${result.sharedPapers.length} paper${result.sharedPapers.length === 1 ? "" : "s"} with the candidate (${result.sharedPapers.map(paper => paper.year).join(", ")})`;
-    return [{ reviewer, result, source: screening.identitySources[reviewer.id] === "orcid" ? "ORCID" as const : "You" as const, reason, profiles: identity?.matchedProfiles ?? [], candidateProfile: structuredClone(demoScenario.candidate), decoyPapers: result.note && demo ? structuredClone(demo.resultsByChoice["R7-b"]?.sharedPapers ?? []) : [], nameMatch: nameMatches.get(screening.id)?.[reviewer.id] }];
+    return [{ reviewer, result, checkFailed: checks.get(screening.id)?.get(reviewer.id)?.state.status === "failed", source: screening.identitySources[reviewer.id] === "orcid" ? "ORCID" as const : "You" as const, reason, profiles: identity?.matchedProfiles ?? [], candidateProfile: structuredClone(demoScenario.candidate), decoyPapers: result.note && demo ? structuredClone(demo.resultsByChoice["R7-b"]?.sharedPapers ?? []) : [], nameMatch: nameMatches.get(screening.id)?.[reviewer.id] }];
   }).sort((a, b) => resultStatuses.indexOf(a.result.status) - resultStatuses.indexOf(b.result.status));
 }
 export function countResults(rows: ResultRow[]): Record<ResultStatus, number> {
   const counts: Record<ResultStatus, number> = { Conflict: 0, Potential: 0, "Insufficient data": 0, "No conflict found": 0 };
-  for (const row of rows) counts[row.result.status]++;
+  for (const row of rows) if (!row.checkFailed) counts[row.result.status]++;
   return counts;
 }
 export function recordDecision(screeningId: string, nameId: string, decision: ScreeningDecision["decision"], reason = ""): void {
@@ -224,12 +228,13 @@ export function recordDecision(screeningId: string, nameId: string, decision: Sc
   if (!screening.resultsReady || !result) throw new Error("Review results before recording a decision.");
   const parsed = z.enum(["approve", "exclude"]).parse(decision);
   const trimmed = z.string().trim().max(2000).parse(reason);
+  if (parsed === "approve" && checks.get(screeningId)?.get(nameId)?.state.status === "failed") throw new Error("Retry the check before approving this reviewer.");
   if (parsed === "approve" && (result.status === "Conflict" || result.status === "Potential") && trimmed.length < 10) throw new Error("Enter a reason of at least 10 characters.");
   screening.decisions[nameId] = { decision: parsed, reason: parsed === "approve" ? trimmed : "", decidedBy: "Dr. Lena Hoffmann", decidedAt: new Date().toISOString() };
 }
 export function countDecisions(screening: Screening): number { return screening.reviewers.filter(row => Boolean(screening.decisions[row.id])).length; }
 export function canDownloadAudit(screening: Screening): boolean { return screening.resultsReady && screening.reviewers.length > 0 && countDecisions(screening) === screening.reviewers.length; }
-export type AuditRecord = { case: string; candidate: string; date: string; reviewers: { name: string; institution: string; identityMethod: string; result: ResultStatus; reason: string; evidence: { label: string; url?: string | undefined }[]; decision: ScreeningDecision }[] };
+export type AuditRecord = { case: string; candidate: string; date: string; reviewers: { name: string; institution: string; identityMethod: string; result: ResultStatus | "Couldn't check"; reason: string; evidence: { label: string; url?: string | undefined }[]; decision: ScreeningDecision }[] };
 export function getAuditRecord(screeningId: string): AuditRecord {
   const screening = getScreening(screeningId);
   if (!screening || !canDownloadAudit(screening)) throw new Error("Decide every reviewer before downloading the audit record.");
@@ -242,12 +247,14 @@ export function getAuditRecord(screeningId: string): AuditRecord {
     if (row.result.employment) evidence.push({ label: `ORCID current employment: ${row.result.employment.institution}`, url: row.profiles[0]?.orcid ? `https://orcid.org/${row.profiles[0].orcid}` : undefined });
     if (row.result.declaredRelationship) evidence.push({ label: `Candidate declaration submitted ${caseRecord.declarations.submitted}: former PhD advisor ${caseRecord.declarations.formerPhdAdvisor}`, url: `${window.location.origin}/cases/${screening.caseId}#candidate-declarations` });
     for (const paper of row.decoyPapers) evidence.push({ label: `${paper.title} (${paper.year}) · Different person · Not counted`, url: `https://doi.org/${paper.doi}` });
-    return { name: row.reviewer.name, institution: row.reviewer.institution, identityMethod, result: row.result.status, reason: row.reason, evidence, decision };
+    return { name: row.reviewer.name, institution: row.reviewer.institution, identityMethod, result: row.checkFailed ? "Couldn't check" as const : row.result.status, reason: row.checkFailed ? CHECK_FAILED_MESSAGE : row.reason, evidence, decision };
   }) };
 }
 /** Research sessions: return the demo case to its untouched starting state. */
 export function resetDemoCase(caseId: string): void {
   browserOnly(); requireCase(caseId);
+  for (const map of checks.values()) for (const entry of map.values()) clearTimers(entry);
+  checks.clear(); retried.clear();
   reviewers = []; screenings.clear(); identityHistory.clear(); nameMatches.clear();
   caseRecord.candidateConfirmed = false; delete caseRecord.candidateProfile;
 }
@@ -278,4 +285,90 @@ export function parseReviewerList(text: string): { rows: ReviewerInput[]; errors
     else rows.push(result.data);
   });
   return { rows, errors };
+}
+// ---------------------------------------------------------------------------
+// Simulated live checks. All demo timing lives here so a real backend can
+// replace runCheck/searchProfiles without touching components.
+export const demoLatencies = ["off", "realistic", "slow"] as const;
+export type DemoLatency = (typeof demoLatencies)[number];
+export type DemoSettings = { latency: DemoLatency; simulateFailure: boolean };
+export type CheckStage = "Publications" | "Institutions" | "Declarations" | "Done" | "Failed";
+export const checkStages: CheckStage[] = ["Publications", "Institutions", "Declarations", "Done"];
+export type CheckState = { reviewerId: string; status: "running" | "done" | "failed"; stage: CheckStage };
+export type CheckEvent = { type: "check_started" | "check_finished" | "check_failed"; reviewerId: string };
+export const CHECK_FAILED_MESSAGE = "Couldn't check: the data source didn't respond";
+const demoSettingsSchema = z.object({ latency: z.enum(demoLatencies), simulateFailure: z.boolean() });
+const demoSettings: DemoSettings = { latency: "realistic", simulateFailure: false };
+type CheckEntry = { state: CheckState; timers: ReturnType<typeof setTimeout>[] };
+const checks = new Map<string, Map<string, CheckEntry>>();
+const retried = new Set<string>();
+const checkListeners = new Set<() => void>();
+const checkEventListeners = new Set<(event: CheckEvent) => void>();
+export function getDemoSettings(): DemoSettings { return { ...demoSettings }; }
+export function setDemoSettings(settings: DemoSettings): void { Object.assign(demoSettings, demoSettingsSchema.parse(settings)); }
+/** Deterministic 0–1 value per reviewer, so every session gets the same timings. */
+export function seededFraction(key: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i++) { hash ^= key.charCodeAt(i); hash = Math.imul(hash, 16777619); }
+  return (hash >>> 0) / 4294967296;
+}
+export function checkDurationMs(reviewerId: string, latency: DemoLatency = demoSettings.latency): number {
+  if (latency === "off") return 0;
+  const fraction = seededFraction(`check:${reviewerId}`);
+  return Math.round(latency === "slow" ? 6000 + fraction * 6000 : 1500 + fraction * 2500);
+}
+export function profileSearchDelayMs(reviewerId: string, latency: DemoLatency = demoSettings.latency): number {
+  return latency === "off" ? 0 : Math.round(500 + seededFraction(`search:${reviewerId}`) * 500);
+}
+/** Simulated profile search for a "Needs you" row. */
+export function searchProfiles(reviewerId: string): Promise<void> {
+  const delay = profileSearchDelayMs(reviewerId);
+  return delay ? new Promise(resolve => setTimeout(resolve, delay)) : Promise.resolve();
+}
+export function subscribeChecks(listener: () => void): () => void { checkListeners.add(listener); return () => { checkListeners.delete(listener); }; }
+export function onCheckEvent(listener: (event: CheckEvent) => void): () => void { checkEventListeners.add(listener); return () => { checkEventListeners.delete(listener); }; }
+function notify(event?: CheckEvent) { if (event) for (const fn of checkEventListeners) fn(event); for (const fn of checkListeners) fn(); }
+function clearTimers(entry: CheckEntry) { for (const timer of entry.timers) clearTimeout(timer); entry.timers = []; }
+function cancelCheck(screeningId: string, reviewerId: string) {
+  const entry = checks.get(screeningId)?.get(reviewerId);
+  if (!entry) return;
+  clearTimers(entry); checks.get(screeningId)?.delete(reviewerId); notify();
+}
+function shouldFail(screeningId: string, reviewerId: string): boolean {
+  const row = screenings.get(screeningId)?.reviewers.find(reviewer => reviewer.id === reviewerId);
+  return demoSettings.simulateFailure && row?.name === "Laura Becker" && !retried.has(`${screeningId}:${reviewerId}`);
+}
+function runCheck(screeningId: string, reviewerId: string) {
+  const map = checks.get(screeningId) ?? new Map<string, CheckEntry>();
+  checks.set(screeningId, map);
+  const previous = map.get(reviewerId);
+  if (previous) clearTimers(previous);
+  const entry: CheckEntry = { state: { reviewerId, status: "running", stage: "Publications" }, timers: [] };
+  map.set(reviewerId, entry);
+  const fail = shouldFail(screeningId, reviewerId);
+  const finish = () => {
+    entry.state = fail ? { reviewerId, status: "failed", stage: "Failed" } : { reviewerId, status: "done", stage: "Done" };
+    notify({ type: fail ? "check_failed" : "check_finished", reviewerId });
+  };
+  notify({ type: "check_started", reviewerId });
+  const duration = checkDurationMs(reviewerId);
+  if (!duration) { finish(); return; }
+  const stage = (next: CheckStage) => () => { entry.state = { ...entry.state, stage: next }; notify(); };
+  entry.timers.push(setTimeout(stage("Institutions"), duration * 0.4), setTimeout(stage("Declarations"), duration * 0.75), setTimeout(finish, duration));
+}
+/** Re-runs only this reviewer's failed check. */
+export function retryCheck(screeningId: string, reviewerId: string): void {
+  requireScreening(screeningId, reviewerId);
+  if (checks.get(screeningId)?.get(reviewerId)?.state.status !== "failed") return;
+  retried.add(`${screeningId}:${reviewerId}`);
+  runCheck(screeningId, reviewerId);
+}
+export function getCheckStates(screeningId: string): Record<string, CheckState> {
+  return Object.fromEntries([...(checks.get(screeningId)?.entries() ?? [])].map(([id, entry]) => [id, { ...entry.state }]));
+}
+export function allChecksSettled(screeningId: string): boolean {
+  const screening = screenings.get(screeningId);
+  if (!screening) return false;
+  const states = getCheckStates(screeningId);
+  return Object.keys(screening.results).every(id => states[id] && states[id].status !== "running");
 }

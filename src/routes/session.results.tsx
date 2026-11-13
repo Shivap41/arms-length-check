@@ -41,14 +41,15 @@ function Results() {
     <form className="session-form" onSubmit={unlock} noValidate><div className="reviewer-field"><label htmlFor="passcode">Passcode</label><input id="passcode" type="password" autoComplete="current-password" maxLength={200} value={passcode} aria-invalid={Boolean(error)} onChange={event => setPasscode(event.target.value)} />{error && <p className="field-error" role="alert">{error}</p>}</div><div className="session-actions"><Button type="submit" disabled={!passcode || busy}>{busy ? "Checking…" : "View results"}</Button></div></form></div>;
   const { sessions, totals } = data;
   return <div className="session-page session-results">
-    <header className="case-header"><h1>Session results</h1><p>{totals.sessions} session{totals.sessions === 1 ? "" : "s"} · targets: identity accuracy at least 95%, total time under 5 minutes.</p></header>
+    <header className="case-header"><h1>Session results</h1><p>{totals.sessions} session{totals.sessions === 1 ? "" : "s"} · targets: identity accuracy at least 95%, chair time under 5 minutes (waiting for checks excluded).</p></header>
     <Button variant="outline" onClick={exportCsv}><Download />Export CSV</Button>
     <section aria-labelledby="totals-title"><h2 id="totals-title">All sessions</h2><dl className="metric-grid">
       <Metric label="Identity accuracy" value={`${pct(totals.accuracy)} (${totals.correct} of ${totals.needsYou})`} ok={totals.needsYou ? totals.accuracy >= ACCURACY_TARGET : undefined} />
       <Metric label="Added Elena Rossi's second profile" value={`${totals.splitProfileAdded} of ${totals.sessions}`} />
       <Metric label="Can't tell rate" value={`${pct(totals.cantTellRate)} · correct for Kenji Watanabe ${totals.cantTellCorrect} of ${totals.sessions} · wrongly used ${totals.cantTellWrong}×`} />
       <Metric label="Time per confirmation" value={`median ${secs(totals.medianConfirmationMs)} · longest ${secs(totals.longestConfirmationMs)}`} />
-      <Metric label="Median total time" value={secs(totals.medianTotalMs)} ok={totals.medianTotalMs === null ? undefined : totals.medianTotalMs < 300000} />
+      <Metric label="Median chair time (excl. waiting)" value={secs(totals.medianChairMs)} ok={totals.medianChairMs === null ? undefined : totals.medianChairMs < 300000} />
+      <Metric label="Median waiting for checks" value={secs(totals.medianWaitMs)} />
       <Metric label="Identity changes after results" value={String(totals.changedLater)} />
     </dl></section>
     {sessions.map(row => <section key={row.sessionId} className="session-card" aria-label={`Session ${row.participantCode}`}>
@@ -58,7 +59,8 @@ function Results() {
         <Metric label="Elena Rossi second profile" value={row.splitProfileAdded ? "Added" : "Not added"} ok={row.splitProfileAdded} />
         <Metric label="Can't tell" value={`${pct(row.cantTellRate)} · Kenji Watanabe ${row.cantTellCorrect ? "correct" : "missed"}${row.cantTellWrong.length ? ` · wrongly: ${row.cantTellWrong.join(", ")}` : ""}`} ok={row.cantTellCorrect && !row.cantTellWrong.length} />
         <Metric label="Time per confirmation" value={`median ${secs(row.medianConfirmationMs)} · longest ${secs(row.longestConfirmationMs)}`} />
-        <Metric label="Check for conflicts → results" value={secs(row.totalMs)} ok={row.underFiveMinutes ?? undefined} />
+        <Metric label="Chair time: Check for conflicts → results" value={`${secs(row.chairMs)} (total ${secs(row.totalMs)})`} ok={row.underFiveMinutes ?? undefined} />
+        <Metric label="Waiting for checks" value={secs(row.waitMs)} />
         <Metric label="Changed after results" value={String(row.changedLater)} />
       </dl>
       {row.errors.length > 0 && <><h3>Errors</h3><ul className="session-errors">{row.errors.map(text => <li key={text}>{text}</li>)}</ul></>}
