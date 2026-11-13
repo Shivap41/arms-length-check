@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arm's Length Check — Spec-Driven Build</title>
+<meta name="description" content="How a spec, a decision log and tests drove AI agents to build Arm's Length Check.">
+<meta property="og:title" content="Arm's Length Check — Spec-Driven Build">
+<meta property="og:description" content="How a spec, a decision log and tests drove AI agents to build Arm's Length Check.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F1EA; --paper-2:#FBF9F4; --card:#FFFFFF;
+    --ink:#1A1714; --ink-soft:#514B44; --ink-faint:#8A8178;
+    --line:#E4DED2; --line-strong:#D2C9B9;
+    --blue:#1C4FD6; --blue-deep:#173FAB; --blue-tint:#E9EEFB;
+    --answered:#1F7A55; --answered-bg:#E6F2EC;
+    --checking:#B06E14; --checking-bg:#F8EEDD;
+    --moreinfo:#1C4FD6; --moreinfo-bg:#E9EEFB;
+    --cant:#6B6259; --cant-bg:#ECE8E1;
+    --radius:16px; --maxw:940px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;
+    line-height:1.62;font-size:16px;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 50% 0,rgba(28,79,214,.04),transparent 60%)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}.reveal{opacity:1!important;transform:none!important}}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  ::selection{background:var(--blue);color:#fff}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:28px 0 0;font-size:13px}
+  .topbar a{color:var(--ink-faint);text-decoration:none;transition:color .2s;display:inline-flex;gap:7px;align-items:center}
+  .topbar a:hover{color:var(--ink)}
+  .idx{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+
+  .hero{padding:64px 0 8px}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-faint);display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:26px}
+  .eyebrow .live{display:inline-flex;align-items:center;gap:8px;color:var(--answered)}
+  .eyebrow .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--answered);
+    box-shadow:0 0 0 0 rgba(31,122,85,.5);animation:pulse 2.6s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(31,122,85,0)}100%{box-shadow:0 0 0 0 rgba(31,122,85,0)}}
+  h1{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(3rem,8.5vw,6rem);
+    line-height:.98;letter-spacing:-.02em;margin-bottom:26px}
+  h1 .em{font-style:italic;font-weight:500;color:var(--blue)}
+  .lede{font-family:'Inter',sans-serif;font-style:italic;font-weight:400;
+    font-size:clamp(1.2rem,2.6vw,1.55rem);line-height:1.5;color:var(--ink-soft);max-width:40ch;letter-spacing:-.005em}
+  .byline{margin-top:32px;display:flex;gap:12px 22px;flex-wrap:wrap;align-items:baseline;font-size:14px;color:var(--ink-soft)}
+  .byline strong{color:var(--ink);font-weight:600}
+  .byline .sep{color:var(--line-strong)}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;margin:48px 0 0;background:var(--card)}
+  .metric{padding:26px 22px;border-right:1px solid var(--line)}
+  .metric:last-child{border-right:none}
+  .metric .num{font-family:'Playfair Display',serif;font-weight:700;font-size:2.6rem;line-height:1;
+    letter-spacing:-.02em;color:var(--ink);margin-bottom:10px}
+  .metric .num small{font-size:1.2rem;color:var(--ink-faint);font-weight:500;font-family:'Inter',sans-serif}
+  .metric .lbl{font-size:12px;color:var(--ink-faint);line-height:1.4}
+  @media(max-width:680px){.metrics{grid-template-columns:1fr 1fr}
+    .metric:nth-child(2){border-right:none}.metric:nth-child(1),.metric:nth-child(2){border-bottom:1px solid var(--line)}}
+
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;margin:34px 0 0}
+  .btn{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:15px;padding:15px 26px;
+    border-radius:12px;text-decoration:none;cursor:pointer;border:1px solid transparent;
+    transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s,border-color .2s}
+  .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 4px rgba(28,79,214,.2),0 12px 28px -12px rgba(28,79,214,.6)}
+  .btn-primary:hover{background:var(--blue-deep);transform:translateY(-2px);box-shadow:0 4px 8px rgba(28,79,214,.25),0 18px 34px -12px rgba(28,79,214,.65)}
+  .btn-primary .arr{transition:transform .2s var(--ease)}
+  .btn-primary:hover .arr{transform:translate(3px,-3px)}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+  .btn-ghost:hover{border-color:var(--ink);transform:translateY(-2px)}
+  .btn:focus-visible,.expand-btn:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+  .problem{margin:56px 0}
+  .problem .q{font-family:'Inter',sans-serif;font-style:italic;font-weight:400;
+    font-size:clamp(1.15rem,2.3vw,1.4rem);line-height:1.5;color:var(--ink);
+    padding-left:26px;border-left:2px solid var(--blue);margin-bottom:22px;max-width:52ch}
+  .problem .attribution{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.03em;color:var(--ink-faint);padding-left:26px}
+
+  .section{padding:24px 0}
+  .sec-eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--blue);font-weight:500;margin-bottom:16px}
+  h2{font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(1.7rem,3.6vw,2.5rem);
+    line-height:1.08;letter-spacing:-.015em;margin-bottom:14px}
+  p.body{color:var(--ink-soft);font-size:16.5px;max-width:64ch;margin-bottom:16px}
+  p.body strong{color:var(--ink);font-weight:600}
+  p.body em{font-style:italic}
+
+  .states{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:30px 0 4px}
+  @media(max-width:640px){.states{grid-template-columns:1fr}}
+  .state{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;
+    position:relative;overflow:hidden;transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
+  .state:hover{transform:translateY(-4px);box-shadow:0 18px 40px -22px rgba(26,23,20,.4)}
+  .state::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+  .state.answered::before{background:var(--answered)}
+  .state.checking::before{background:var(--checking)}
+  .state.moreinfo::before{background:var(--moreinfo)}
+  .state.cant::before{background:var(--cant)}
+  .state .tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;padding:6px 12px;border-radius:20px;margin-bottom:14px}
+  .state.answered .tag{color:var(--answered);background:var(--answered-bg)}
+  .state.checking .tag{color:var(--checking);background:var(--checking-bg)}
+  .state.moreinfo .tag{color:var(--moreinfo);background:var(--moreinfo-bg)}
+  .state.cant .tag{color:var(--cant);background:var(--cant-bg)}
+  .state .tag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .state .meaning{font-size:15px;color:var(--ink);font-weight:500;margin-bottom:6px;line-height:1.45}
+  .state .next{font-size:13px;color:var(--ink-faint)}
+
+  .expand-bar{margin:52px 0 0;border-top:1px solid var(--line);padding-top:44px;text-align:center}
+  .section-marker{display:inline-flex;align-items:center;gap:12px;font-weight:600;font-size:15.5px;color:var(--ink);
+    background:var(--card);border:1px solid var(--line-strong);padding:16px 30px;border-radius:13px}
+  .section-marker-label{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+  .expand-hint{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink-faint)}
+
+  .specs{margin-top:16px}
+  .spec-block{padding:46px 0 6px;border-top:1px solid var(--line)}
+  .spec-block:first-child{border-top:none}
+
+  .stages{margin-top:26px}
+  .stage{display:grid;grid-template-columns:auto 1fr;gap:22px;padding:20px 0;border-bottom:1px solid var(--line)}
+  .stage:last-child{border-bottom:none}
+  .stage .n{font-family:'Playfair Display',serif;font-weight:600;font-size:1.3rem;color:var(--blue);
+    width:44px;height:44px;border-radius:11px;background:var(--blue-tint);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .stage .st{font-weight:600;font-size:15.5px;color:var(--ink);margin-bottom:4px}
+  .stage .sd{font-size:14.5px;color:var(--ink-soft)}
+
+  .pipe{display:flex;flex-wrap:wrap;align-items:stretch;gap:12px;margin:26px 0 12px}
+  .pipe-node{flex:1;min-width:140px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:18px}
+  .pipe-node .pn-k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:9px}
+  .pipe-node .pn-t{font-weight:600;font-size:14.5px;margin-bottom:6px}
+  .pipe-node .pn-d{font-size:12.5px;color:var(--ink-soft);line-height:1.45}
+  .pipe-arrow{align-self:center;color:var(--line-strong);font-size:20px;flex:0 0 auto}
+  @media(max-width:640px){.pipe{flex-direction:column}.pipe-arrow{transform:rotate(90deg);margin-left:28px}}
+
+  .stack{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .chip{display:inline-flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);
+    border-radius:10px;padding:10px 15px;font-size:13.5px;color:var(--ink-soft)}
+  .chip b{color:var(--ink);font-weight:600}
+  .chip .dot{width:8px;height:8px;border-radius:2px;background:var(--blue)}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0 6px}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:24px}
+  .mcard .mv{font-family:'Playfair Display',serif;font-weight:700;font-size:2rem;color:var(--blue);line-height:1;margin-bottom:10px;letter-spacing:-.01em}
+  .mcard .mk{font-size:13.5px;color:var(--ink);font-weight:600;margin-bottom:4px}
+  .mcard .md{font-size:12.5px;color:var(--ink-faint);line-height:1.45}
+
+  .tbl-scroll{overflow-x:auto;margin:26px 0 6px;border:1px solid var(--line);border-radius:13px;background:var(--card)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+  thead th{background:var(--paper-2);text-align:left;padding:14px 18px;font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 18px;border-bottom:1px solid var(--line);color:var(--ink-soft);vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody td:first-child{color:var(--ink);font-weight:500}
+  .pass{display:inline-flex;align-items:center;gap:6px;color:var(--answered);font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px}
+  .pass::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--answered)}
+  .sel-row td{background:var(--blue-tint)!important}
+  .sel-badge{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:500;color:var(--blue);
+    background:#fff;border:1px solid var(--blue);padding:2px 7px;border-radius:20px;margin-left:8px;letter-spacing:.05em}
+
+  .found{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:32px;margin:26px 0 6px}
+  .found h3{font-family:'Playfair Display',serif;font-weight:500;font-style:italic;font-size:1.35rem;margin-bottom:10px}
+  .found p{font-size:14.5px;color:var(--ink-soft);margin-bottom:16px;max-width:66ch}
+  .found ul{list-style:none;display:flex;flex-direction:column;gap:16px;margin-top:6px}
+  .found li{display:grid;grid-template-columns:96px 1fr;gap:16px;font-size:14px;color:var(--ink-soft)}
+  .found li .mk{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--blue);padding-top:3px}
+  .found li b{color:var(--ink);font-weight:600}
+  @media(max-width:560px){.found li{grid-template-columns:1fr;gap:4px}}
+
+  .scope-note{font-size:14.5px;color:var(--ink-soft);font-style:italic;border-left:2px solid var(--line-strong);
+    padding-left:20px;margin-top:24px;max-width:66ch}
+
+  .closing{text-align:center;padding:64px 0 8px;border-top:1px solid var(--line);margin-top:52px}
+  .closing h2{margin-bottom:12px}
+  .closing p{color:var(--ink-soft);font-size:15.5px;margin-bottom:28px}
+  footer{padding:44px 0 60px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink-faint)}
+
+  .reveal{opacity:0;transform:translateY(12px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+
+  /* ---- Arm's Length Check additions ---- */
+  :root{--conflict:#B42318;--conflict-bg:#FDECEA;--potential:#B06E14;--potential-bg:#F8EEDD;
+    --nocon:#1F7A55;--nocon-bg:#E6F2EC;--insuf:#6B6259;--insuf-bg:#ECE8E1}
+  .tabbar{position:sticky;top:0;z-index:20;background:rgba(244,241,234,.94);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);margin:40px -24px 0;padding:0 24px}
+  .tabbar nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+  .tabbar a,.tabbar span.soon{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.06em;
+    white-space:nowrap;padding:16px 14px;color:var(--ink-faint);text-decoration:none;border-bottom:2px solid transparent}
+  .tabbar a:hover{color:var(--ink)}
+  .tabbar a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--blue)}
+  .tabbar span.soon{opacity:.6;cursor:not-allowed}
+  .disclaimer{margin-top:18px;font-size:12.5px;color:var(--ink-faint);max-width:72ch;line-height:1.5}
+  .btn[aria-disabled="true"]{opacity:.55;pointer-events:none}
+  .chip-s{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    font-weight:500;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .chip-s::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .s-fail{color:var(--conflict);background:var(--conflict-bg)}
+  .s-pass{color:var(--nocon);background:var(--nocon-bg)}
+  .s-open{color:var(--insuf);background:var(--insuf-bg)}
+  .s-warn{color:var(--potential);background:var(--potential-bg)}
+  .state.conflict::before{background:var(--conflict)} .state.conflict .tag{color:var(--conflict);background:var(--conflict-bg)}
+  .state.potential::before{background:var(--potential)} .state.potential .tag{color:var(--potential);background:var(--potential-bg)}
+  .state.nocon::before{background:var(--nocon)} .state.nocon .tag{color:var(--nocon);background:var(--nocon-bg)}
+  .state.insuf::before{background:var(--insuf)} .state.insuf .tag{color:var(--insuf);background:var(--insuf-bg)}
+  .win td{background:var(--blue-tint)!important;color:var(--ink)!important;font-weight:600}
+  .keyline{font-family:'Inter',sans-serif;font-style:italic;font-size:1.08rem;color:var(--ink);border-left:2px solid var(--blue);
+    padding-left:20px;margin:22px 0;max-width:62ch}
+  .flow{display:grid;grid-template-columns:1fr auto 1.4fr auto 1fr;gap:14px;align-items:stretch;margin:28px 0}
+  .flow .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .flow .box .k{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+  .flow .box .t{font-weight:600;font-size:15px;margin-bottom:6px}
+  .flow .box ul{list-style:none;font-size:13.5px;color:var(--ink-soft)}
+  .flow .box li{padding:3px 0}
+  .flow .box li b{color:var(--ink)}
+  .flow .ar{align-self:center;color:var(--ink-faint);font-size:20px}
+  .flow .box.gate{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-tint)}
+  @media(max-width:760px){.flow{grid-template-columns:1fr}.flow .ar{transform:rotate(90deg);justify-self:center}}
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin:24px 0}
+  .chart svg{width:100%;height:auto;display:block}
+  .chart .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);margin-top:10px}
+  .chart .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
+  .cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+  .cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+  @media(max-width:760px){.cols3,.cols2{grid-template-columns:1fr}}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .col h3{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+  .col ul{list-style:none;font-size:14px;color:var(--ink-soft)}
+  .col li{padding:7px 0;border-bottom:1px dashed var(--line)} .col li:last-child{border-bottom:none}
+  .col li b{color:var(--ink)}
+  .slide{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:34px;margin:22px 0}
+  .slide .sn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--ink-faint);margin-bottom:12px}
+  .slide h2{margin-bottom:16px}
+  .tag-a{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--potential);background:var(--potential-bg);
+    padding:2px 7px;border-radius:6px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+  .metrics.m3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:680px){.metrics.m3{grid-template-columns:1fr}.metrics.m3 .metric{border-right:none;border-bottom:1px solid var(--line)}.metrics.m3 .metric:last-child{border-bottom:none}}
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  @media(max-width:680px){.stat3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a href="index.html" aria-label="Back to portfolio">← Portfolio</a>
+    <span class="idx">Case Study · Arm's Length Check</span>
+  </div>
+  <div class="tabbar"><nav aria-label="Arm's Length Check sections"><a href="/arms-length-check">01 PRD</a><a href="/arms-length-check-business-case">02 Business case</a><a href="/arms-length-check-build" aria-current="page">03 Spec-driven build</a><a href="https://arms-length-check.shiva41-prasad.workers.dev" target="_blank" rel="noopener">Live demo ↗</a></nav></div>
+
+  <header class="hero">
+    <div class="eyebrow"><span>Spec-driven development · AI agents</span></div>
+    <h1>The spec is the<br><span class="em">PM's code</span></h1>
+    <p class="lede">Agents built to the spec, and tests held them to it. Here is how a finding in a data test became a rule an agent can't skip.</p>
+    <p class="disclaimer">Independent product concept built on public research data (OpenAlex, ORCID). Inspired by Interfolio's tenure and promotion workflow; not affiliated with or endorsed by Interfolio or Elsevier.</p>
+  </header>
+
+  <div class="metrics m3 reveal">
+    <div class="metric"><div class="num">29<small>/29</small></div><div class="lbl">Known shared papers found in the regression run on the 59 frozen test pairs</div></div>
+    <div class="metric"><div class="num">0<small>/30</small></div><div class="lbl">Conflicts wrongly raised on same-name and unrelated reviewers</div></div>
+    <div class="metric"><div class="num">200</div><div class="lbl">Unit tests passing; 59 product decisions logged with reasons</div></div>
+  </div>
+
+  <section class="section reveal">
+    <div class="sec-eyebrow">01 · The pipeline</div>
+    <h2>Five documents, one direction of authority</h2>
+    <div class="pipe">
+      <div class="pipe-node"><div class="pn-k">What &amp; why</div><div class="pn-t">PRD</div><div class="pn-d">Assumptions, scope, metrics, gates.</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node"><div class="pn-k">Why it looks this way</div><div class="pn-t">Decision log</div><div class="pn-d">Never edited, only superseded.</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node"><div class="pn-k">How, testably</div><div class="pn-t">Build spec</div><div class="pn-d">Features, Given/When/Then criteria, rules in one config.</div></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node"><div class="pn-k">Build &amp; prove</div><div class="pn-t">Agents + tests</div><div class="pn-d">Prompt pack, unit tests, regression on frozen data.</div></div>
+    </div>
+    <p class="keyline">On decisions the decision log wins; on scope the PRD wins. If a test fails, the agent fixes the code, not the test.</p>
+  </section>
+
+  <section class="section reveal">
+    <div class="sec-eyebrow">02 · One requirement, traced end to end</div>
+    <h2>How a data-test finding became a test an agent can't skip</h2>
+    <div class="stages">
+      <div class="stage"><div class="n">1</div><div><div class="st">Finding</div><div class="sd">In the third data test, every researcher who shared a name with a real co-author came back as a Conflict.</div></div></div>
+      <div class="stage"><div class="n">2</div><div><div class="st">Decision</div><div class="sd">A shared paper counts as a Conflict only when its author is the confirmed reviewer. A match on name alone becomes Potential, with a "check it's this person" prompt.</div></div></div>
+      <div class="stage"><div class="n">3</div><div><div class="st">Acceptance criterion</div><div class="sd">"Given a confirmed reviewer who shares a name with a real co-author, the result is never Conflict."</div></div></div>
+      <div class="stage"><div class="n">4</div><div><div class="st">Build</div><div class="sd">Rules are pure functions with no network calls, and every threshold lives in one config file, so the rule can be tested in isolation.</div></div></div>
+      <div class="stage"><div class="n">5</div><div><div class="st">Test</div><div class="sd">The regression run passes only with zero Conflicts on same-name and unrelated reviewers, and at least 85% of known shared papers found. Latest run: 29 of 29 shared papers found, 0 of 30 wrong Conflicts. Five same-name reviewers came out Potential with a "check it's this person" prompt, which the rule allows.</div></div></div>
+    </div>
+    <p class="body" style="margin-top:18px"><strong>A second, shorter trace.</strong> Reviewing the prototype, I saw that results appeared instantly, hiding the 4–5 data lookups each reviewer really needs. So checks now start in the background as each person is confirmed, with a target of 15 names within 20 seconds of the last confirmation, and test sessions log waiting time separately from the chair's own time.</p>
+  </section>
+
+  <section class="section reveal">
+    <div class="sec-eyebrow">03 · Guardrails</div>
+    <h2>Where the agents were not allowed to be clever</h2>
+    <div class="found"><ul>
+      <li><span class="mk">Decisions</span><span>AI never decides a conflict. The rules are deterministic and explainable, and a person makes every call.</span></li>
+      <li><span class="mk">Failures</span><span>A failed lookup shows <b>"Couldn't check"</b> with a retry. It never becomes "No conflict found".</span></li>
+      <li><span class="mk">Security</span><span>Data calls happen only on the server; API keys never reach the browser.</span></li>
+      <li><span class="mk">Honesty</span><span>The prototype runs on fictional people, and anything mocked is labelled on screen.</span></li>
+    </ul></div>
+  </section>
+
+  <section class="section reveal">
+    <div class="sec-eyebrow">04 · What got built</div>
+    <h2>A prototype to test the riskiest step, and a backend for the rest</h2>
+    <div class="cols2">
+      <div class="col"><h3>Prototype</h3><ul><li>Clickable flow on fictional demo data</li><li>Session mode logs identity picks and timings against an answer key</li><li>Built in Lovable from an ordered prompt pack</li></ul></div>
+      <div class="col"><h3>Live backend</h3><ul><li>Server-side OpenAlex and ORCID lookups, cached, retried and rate-limited</li><li>Own database and sign-in</li><li>Rules engine with unit tests; regression suite from the frozen test data</li><li>Public showcase on Cloudflare Workers: live checks with a daily cap, a per-visitor limit and no stored data</li><li>Built with Claude Code against the spec</li></ul></div>
+    </div>
+    <p class="body"><strong>A risk I took on purpose:</strong> the backend went ahead before chair sessions, which are postponed. If chairs struggle to confirm identity, part of it may need rework.</p>
+  </section>
+
+  <section class="section reveal">
+    <div class="sec-eyebrow">05 · What I'd do differently</div>
+    <h2>Lessons I'm carrying forward</h2>
+    <ul class="body" style="max-width:64ch;padding-left:18px">
+      <li style="margin-bottom:8px">Put the same-name test case into the <b>first</b> data test, not the third.</li>
+      <li style="margin-bottom:8px">Size the human step (two in three names) before designing around it.</li>
+      <li>Decide where each layer is built (prototype tool vs code) before writing build prompts, not after.</li>
+      <li style="margin-top:8px">Test institution rules against umbrella records early: a university system and a research funder both produced false matches before the rules were tightened.</li>
+    </ul>
+  </section>
+
+  <div class="closing reveal">
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn btn-ghost" href="/arms-length-check">← PRD</a>
+      <a class="btn btn-ghost" href="/arms-length-check-business-case">← Business case</a>
+      <a class="btn btn-primary" href="https://arms-length-check.shiva41-prasad.workers.dev" target="_blank" rel="noopener">Try the live demo <span class="arr">↗</span></a>
+    </div>
+  </div>
+
+  <footer>Arm's Length Check · independent product concept on public research data (OpenAlex, ORCID). Inspired by university tenure workflows such as Interfolio's; not affiliated with or endorsed by Interfolio or Elsevier. Built by Shiva Prasad Pidishetti.</footer>
+</div>
+<script>
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+</script>
+</body>
+</html>

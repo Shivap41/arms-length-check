@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shiva Prasad Pidishetti — Senior Product Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F1EA; --paper-2:#FBF9F4; --card:#FFFFFF;
+    --ink:#1A1714; --ink-soft:#514B44; --ink-faint:#8A8178;
+    --line:#E4DED2; --line-strong:#D2C9B9;
+    --blue:#1C4FD6; --blue-deep:#173FAB; --blue-tint:#E9EEFB;
+    --answered:#1F7A55; --answered-bg:#E6F2EC;
+    --radius:16px; --maxw:1000px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;
+    line-height:1.62;font-size:16px;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 50% -5%,rgba(28,79,214,.05),transparent 55%)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}.reveal{opacity:1!important;transform:none!important}}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  ::selection{background:var(--blue);color:#fff}
+  a{color:inherit}
+
+  /* ---------- sticky nav ---------- */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(244,241,234,.82);
+    backdrop-filter:saturate(140%) blur(12px);-webkit-backdrop-filter:saturate(140%) blur(12px);
+    border-bottom:1px solid transparent;transition:border-color .3s,background .3s}
+  .nav.stuck{border-bottom-color:var(--line)}
+  .nav-inner{max-width:var(--maxw);margin:0 auto;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+  .nav-name{font-family:'Playfair Display',serif;font-weight:600;font-size:17px;letter-spacing:-.01em;text-decoration:none;color:var(--ink)}
+  .nav-name .dot{color:var(--blue)}
+  .nav-links{display:flex;gap:26px;align-items:center}
+  .nav-links a{font-size:13.5px;color:var(--ink-soft);text-decoration:none;transition:color .2s;position:relative}
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-5px;height:1.5px;background:var(--blue);
+    transform:scaleX(0);transform-origin:left;transition:transform .25s var(--ease)}
+  .nav-links a:hover::after{transform:scaleX(1)}
+  .nav-cta{font-size:13.5px;font-weight:600;color:#fff!important;background:var(--blue);
+    padding:8px 16px;border-radius:9px;transition:background .2s,transform .18s var(--ease)}
+  .nav-cta:hover{background:var(--blue-deep);transform:translateY(-1px)}
+  .nav-cta::after{display:none}
+  @media(max-width:680px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{padding:88px 0 56px;border-bottom:1px solid var(--line)}
+  .hero .avail{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--answered);display:inline-flex;align-items:center;gap:9px;margin-bottom:28px}
+  .hero .avail::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--answered);
+    box-shadow:0 0 0 0 rgba(31,122,85,.5);animation:pulse 2.6s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(31,122,85,0)}100%{box-shadow:0 0 0 0 rgba(31,122,85,0)}}
+  h1{font-family:'Playfair Display',serif;font-weight:700;font-size:clamp(2.7rem,7vw,5rem);
+    line-height:1.02;letter-spacing:-.02em;margin-bottom:8px}
+  .hero .role{font-family:'Playfair Display',serif;font-style:italic;font-weight:500;
+    font-size:clamp(1.4rem,3.4vw,2.1rem);color:var(--blue);line-height:1.1;margin-bottom:28px}
+  .hero .role .role-loc{font-style:normal;font-family:'Inter',sans-serif;font-weight:400;
+    font-size:.62em;color:var(--ink-faint);letter-spacing:.01em}
+  .hero .intro{font-size:clamp(1.05rem,1.9vw,1.2rem);color:var(--ink-soft);max-width:60ch;margin-bottom:16px}
+  .hero .intro strong{color:var(--ink);font-weight:600}
+  .hero .meta{margin-top:26px;display:flex;gap:10px 20px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;letter-spacing:.02em}
+  .hero .meta span{display:inline-flex;align-items:center;gap:8px}
+  .hero .meta .sep{color:var(--line-strong)}
+
+  /* ---------- section frame ---------- */
+  section[id]{padding:72px 0;border-bottom:1px solid var(--line);scroll-margin-top:70px}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:36px}
+  .sec-num{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--blue);font-weight:500}
+  h2{font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(1.6rem,3.4vw,2.3rem);
+    line-height:1.08;letter-spacing:-.015em}
+  .sec-sub{color:var(--ink-soft);font-size:16px;max-width:60ch;margin-top:-22px;margin-bottom:34px}
+
+  /* ---------- expertise tags in about ---------- */
+  .expertise-block{margin-top:34px}
+  .expertise-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--blue);font-weight:500;margin-bottom:16px}
+  .focus{display:flex;flex-wrap:wrap;gap:10px}
+  .focus .f{font-size:13px;letter-spacing:.01em;color:var(--ink);background:var(--card);
+    border:1px solid var(--line-strong);padding:9px 16px;border-radius:20px;transition:border-color .2s}
+  .focus .f:hover{border-color:var(--blue)}
+
+  /* ---------- roles timeline ---------- */
+  .roles{display:flex;flex-direction:column}
+  .role-item{display:grid;grid-template-columns:1fr auto;gap:8px 24px;padding:26px 0;border-top:1px solid var(--line);align-items:start}
+  .role-item:first-child{border-top:none;padding-top:0}
+  .role-item .rt{font-family:'Playfair Display',serif;font-weight:600;font-size:1.3rem;line-height:1.2;letter-spacing:-.01em}
+  .role-item .rc{color:var(--ink-soft);font-size:14.5px;margin-top:3px}
+  .role-item .rh{color:var(--ink);font-size:14.5px;margin-top:12px;grid-column:1/-1;max-width:70ch;
+    padding-left:16px;border-left:2px solid var(--blue-tint)}
+  .role-item .rh b{font-weight:600}
+  .role-item .rd{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.03em;
+    color:var(--ink-faint);text-align:right;white-space:nowrap;padding-top:6px}
+  @media(max-width:600px){.role-item{grid-template-columns:1fr}.role-item .rd{text-align:left;padding-top:2px}}
+
+  .edu{display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:34px;padding-top:28px;border-top:1px solid var(--line)}
+  .edu .e-k{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+  .edu .e-v{font-size:14.5px;color:var(--ink)}
+  .edu .e-v b{font-weight:600}
+  .edu .e-v span{color:var(--ink-faint)}
+
+  /* ---------- skills ---------- */
+  .skills{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  @media(max-width:720px){.skills{grid-template-columns:1fr}}
+  .skill-group{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  .skill-group h3{font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--blue);font-weight:500;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .skill-group h3::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--blue)}
+  .tags{display:flex;flex-wrap:wrap;gap:8px}
+  .tags .t{font-size:13px;color:var(--ink-soft);background:var(--paper-2);border:1px solid var(--line);
+    padding:6px 12px;border-radius:8px;transition:border-color .2s,color .2s}
+  .skill-group:hover .t{border-color:var(--line-strong)}
+  .certs{margin-top:26px;padding-top:24px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+  .certs .c-lbl{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+  .certs .c{font-size:13px;color:var(--ink-soft)}
+  .certs .c + .c::before{content:"·";margin-right:18px;color:var(--line-strong)}
+
+  /* ---------- impact ---------- */
+  .impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:760px){.impact-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:460px){.impact-grid{grid-template-columns:1fr}}
+  .impact-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 24px;transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
+  .impact-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px -24px rgba(26,23,20,.38)}
+  .impact-card .iv{font-family:'Playfair Display',serif;font-weight:700;font-size:2.6rem;line-height:1;
+    letter-spacing:-.02em;color:var(--blue);margin-bottom:12px}
+  .impact-card .iv small{font-size:1.3rem;font-weight:500}
+  .impact-card .id{font-size:14px;color:var(--ink-soft);line-height:1.45}
+  .impact-card .ir{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-faint);margin-top:14px}
+
+  /* ---------- projects ---------- */
+  .proj-grid{display:flex;flex-direction:column;gap:20px}
+  .proj{display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:32px;text-decoration:none;color:inherit;position:relative;overflow:hidden;
+    transition:transform .24s var(--ease),box-shadow .24s var(--ease),border-color .24s}
+  .proj:hover{transform:translateY(-4px);box-shadow:0 24px 48px -28px rgba(26,23,20,.4);border-color:var(--line-strong)}
+  .proj::after{content:"↗";position:absolute;top:28px;right:30px;font-size:22px;color:var(--blue);
+    opacity:0;transform:translate(-4px,4px);transition:opacity .24s,transform .24s var(--ease)}
+  .proj:hover::after{opacity:1;transform:none}
+  .proj .p-top{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .proj .p-live{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--answered);background:var(--answered-bg);padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:7px}
+  .proj .p-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--answered)}
+  .proj .p-concept{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:#9A5E10;background:#F8EEDD;padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:7px}
+  .proj .p-concept::before{content:"";width:6px;height:6px;border-radius:50%;background:#B06E14}
+  .proj .p-deck{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--blue);background:var(--blue-tint);padding:5px 11px;border-radius:20px;display:inline-flex;align-items:center;gap:7px}
+  .proj .p-deck::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue)}
+  .proj .p-cat{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;color:var(--ink-faint)}
+  .proj .p-title{font-family:'Playfair Display',serif;font-weight:600;font-size:1.7rem;letter-spacing:-.015em;margin-bottom:10px;line-height:1.1}
+  .proj .p-desc{color:var(--ink-soft);font-size:15.5px;max-width:64ch;margin-bottom:22px}
+  .proj .p-metrics{display:flex;flex-wrap:wrap;gap:12px}
+  .proj .p-metric{display:flex;flex-direction:column;gap:2px;padding:12px 18px;background:var(--paper-2);
+    border:1px solid var(--line);border-radius:11px;min-width:110px}
+  .proj .p-metric .pv{font-family:'Playfair Display',serif;font-weight:700;font-size:1.35rem;color:var(--blue);line-height:1}
+  .proj .p-metric .pk{font-size:11.5px;color:var(--ink-faint)}
+
+  /* ---------- connect ---------- */
+  #connect{border-bottom:none;text-align:center;padding-bottom:56px}
+  #connect h2{margin-bottom:14px}
+  #connect .c-sub{color:var(--ink-soft);font-size:16.5px;max-width:48ch;margin:0 auto 36px}
+  .connect-grid{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+  .connect-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+    border-radius:13px;padding:18px 24px;text-decoration:none;color:inherit;min-width:220px;
+    transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s}
+  .connect-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px -20px rgba(26,23,20,.4);border-color:var(--blue)}
+  .connect-card .ic{width:38px;height:38px;flex-shrink:0;border-radius:10px;background:var(--blue-tint);
+    display:flex;align-items:center;justify-content:center;color:var(--blue)}
+  .connect-card .ic svg{width:20px;height:20px}
+  .connect-card .cc-k{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:2px}
+  .connect-card .cc-v{font-size:14.5px;color:var(--ink);font-weight:500;word-break:break-all}
+
+  footer{padding:40px 0 60px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;color:var(--ink-faint)}
+
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s var(--ease),transform .55s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#top" class="nav-name">Shiva Prasad Pidishetti</a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#experience">Experience</a>
+      <a href="#skills">Skills</a>
+      <a href="#impact">Impact</a>
+      <a href="#projects">Projects</a>
+      <a href="https://www.linkedin.com/in/shivaprasadpidishetti/" target="_blank" rel="noopener" class="nav-cta">Connect</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap" id="top">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="avail">Open to Senior PM roles</span>
+    <h1>Shiva Prasad<br>Pidishetti</h1>
+    <div class="role">Senior Product Manager <span class="role-loc">· London, UK</span></div>
+    <p class="intro">I build <strong>trusted products in regulated environments</strong> — where the hard part isn't shipping features, it's earning the confidence to rely on them. Ten years across banks, payment providers, and financial institutions, the last several leading product from 0→1 in compliance, risk, and AI.</p>
+    <div class="meta">
+      <span>10+ yrs in financial services</span><span class="sep">/</span>
+      <span>IIM Calcutta MBA</span><span class="sep">/</span>
+      <span>UK work authorized</span>
+    </div>
+  </header>
+
+  <!-- ABOUT / SUMMARY -->
+  <section id="about" class="reveal">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Overview</h2></div>
+    <p style="color:var(--ink-soft);font-size:16.5px;max-width:64ch;margin-bottom:16px">
+      Across a decade in financial services, I've moved from credit and risk into product — leading end-to-end
+      development across merchant monitoring, risk decisioning, AI copilots, and regulatory intelligence, and
+      delivering scalable products that strengthened compliance, reduced operational risk, and made investigations
+      meaningfully faster. My work spans global rollouts, third-party integrations, and building AI products
+      people can actually trust in tightly regulated settings.
+    </p>
+    <p style="color:var(--ink-soft);font-size:16.5px;max-width:64ch">
+      My depth is in financial services and risk, but the throughline is broader: turning ambiguous, high-stakes
+      problems into products enterprises adopt and rely on. That translates across B2B SaaS wherever trust,
+      complexity, and scale are the real constraints.
+    </p>
+    <div class="expertise-block">
+      <div class="expertise-label">Areas of expertise</div>
+      <div class="focus">
+        <span class="f">B2B &amp; Enterprise SaaS</span>
+        <span class="f">Financial Services</span>
+        <span class="f">Merchant Risk Monitoring</span>
+        <span class="f">Risk Decisioning for Portfolio Management</span>
+        <span class="f">AI &amp; RAG Products</span>
+        <span class="f">FinCrime &amp; Compliance</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE (roles only) -->
+  <section id="experience" class="reveal">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Experience</h2></div>
+    <div class="roles">
+      <div class="role-item">
+        <div>
+          <div class="rt">Senior Product Manager</div>
+          <div class="rc">ICRA Analytics (Fintellix Solutions)</div>
+        </div>
+        <div class="rd">May 2023 – Dec 2025</div>
+        <div class="rh">Built a <b>0→1 AI-powered FinCrime platform</b> protecting 3M+ merchants across payment providers, and shipped a <b>RAG regulatory-intelligence copilot</b> into analyst workflows.</div>
+      </div>
+      <div class="role-item">
+        <div>
+          <div class="rt">Product Manager</div>
+          <div class="rc">Punjab National Bank · enterprise risk platforms</div>
+        </div>
+        <div class="rd">Oct 2019 – Mar 2022</div>
+        <div class="rh">Owned an <b>Early Warning System</b> monitoring $200M+ in assets — cut fresh NPA inflows 15%.</div>
+      </div>
+      <div class="role-item">
+        <div>
+          <div class="rt">Credit Manager</div>
+          <div class="rc">Oriental Bank of Commerce · infrastructure &amp; equity finance</div>
+        </div>
+        <div class="rd">Aug 2017 – Sep 2019</div>
+        <div class="rh">Managed <b>$20M+ in deals</b>, holding NPA below 4% through disciplined covenant monitoring.</div>
+      </div>
+      <div class="role-item">
+        <div>
+          <div class="rt">Assistant Manager</div>
+          <div class="rc">Oriental Bank of Commerce · portfolio &amp; deposits</div>
+        </div>
+        <div class="rd">Jun 2014 – Jul 2017</div>
+        <div class="rh">Top-3 regional rank in deposit mobilization, exceeding quarterly targets.</div>
+      </div>
+    </div>
+    <div class="edu">
+      <div>
+        <div class="e-k">Education</div>
+        <div class="e-v"><b>MBA</b>, Indian Institute of Management, Calcutta <span>· 2023</span></div>
+        <div class="e-v"><b>B.Tech, Biotechnology</b>, JNTU Hyderabad <span>· 2012</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILLS -->
+  <section id="skills" class="reveal">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Skills &amp; expertise</h2></div>
+    <div class="skills">
+      <div class="skill-group">
+        <h3>Product &amp; Strategy</h3>
+        <div class="tags">
+          <span class="t">Product Strategy &amp; Roadmap</span><span class="t">0-to-1 Product</span>
+          <span class="t">Global / Multi-Market Rollouts</span><span class="t">GTM &amp; Commercialization</span>
+          <span class="t">Product Discovery</span><span class="t">OKRs</span><span class="t">A/B Testing</span>
+          <span class="t">Stakeholder Management</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h3>FinCrime &amp; Risk</h3>
+        <div class="tags">
+          <span class="t">AML / FinCrime Compliance</span><span class="t">Customer Risk Rating</span>
+          <span class="t">Transaction Monitoring</span><span class="t">Early Warning Systems</span>
+          <span class="t">Vendor &amp; Third-Party Risk</span><span class="t">Decisioning &amp; Rules Engines</span>
+          <span class="t">Portfolio Health Analytics</span><span class="t">Regulatory Reporting</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h3>AI &amp; ML</h3>
+        <div class="tags">
+          <span class="t">LLM Evaluation</span><span class="t">RAG Grounding &amp; Accuracy</span>
+          <span class="t">Explainable AI</span><span class="t">Semantic Search</span>
+          <span class="t">Prompt Engineering</span><span class="t">Conversational AI</span>
+          <span class="t">Human-in-the-Loop Validation</span><span class="t">API Integration</span>
+        </div>
+      </div>
+      <div class="skill-group">
+        <h3>Tools</h3>
+        <div class="tags">
+          <span class="t">SQL</span><span class="t">Jira</span><span class="t">Confluence</span>
+          <span class="t">Figma</span><span class="t">Tableau</span><span class="t">Lovable</span><span class="t">Postman</span>
+        </div>
+      </div>
+    </div>
+    <div class="certs">
+      <span class="c-lbl">Certifications</span>
+      <span class="c">IBM AI Product Manager</span>
+      <span class="c">Google Data Analytics</span>
+      <span class="c">Google UI/UX</span>
+      <span class="c">Pendo Product Analytics</span>
+    </div>
+  </section>
+
+  <!-- IMPACT -->
+  <section id="impact" class="reveal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Impact created</h2></div>
+    <div class="impact-grid">
+      <div class="impact-card">
+        <div class="iv">3M+</div>
+        <div class="id">Merchants protected by a 0→1 merchant-monitoring platform, cutting post-onboarding violations 35%.</div>
+        <div class="ir">ICRA Analytics</div>
+      </div>
+      <div class="impact-card">
+        <div class="iv">$410K<small>+</small></div>
+        <div class="id">In regulatory fines avoided for clients through earlier, sharper compliance detection.</div>
+        <div class="ir">ICRA Analytics</div>
+      </div>
+      <div class="impact-card">
+        <div class="iv">&lt;5<small>%</small></div>
+        <div class="id">Production hallucination rate on a RAG copilot with human-in-the-loop validation — cutting SME escalations 35%.</div>
+        <div class="ir">ICRA Analytics</div>
+      </div>
+      <div class="impact-card">
+        <div class="iv">94<small>%</small></div>
+        <div class="id">Match accuracy after replacing legacy keyword search with semantic retrieval across 10K+ regulatory documents — analyst self-resolution up 36%.</div>
+        <div class="ir">ICRA Analytics</div>
+      </div>
+      <div class="impact-card">
+        <div class="iv">$200M<small>+</small></div>
+        <div class="id">In assets monitored by an Early Warning System that replaced periodic reviews — risk-detection latency cut by 40 days.</div>
+        <div class="ir">Punjab National Bank</div>
+      </div>
+      <div class="impact-card">
+        <div class="iv">55<small>%+</small></div>
+        <div class="id">Daily active usage after embedding credit-risk signals into the LMS, reaching users across 1000+ branches.</div>
+        <div class="ir">Punjab National Bank</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECTS -->
+  <section id="projects" class="reveal">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Projects</h2></div>
+    <p class="sec-sub">Products built end to end — click through for the architecture, evaluation, and a live link.</p>
+    <div class="proj-grid">
+      <a class="proj" href="regulatory-intelligence.html">
+        <div class="p-top">
+          <span class="p-live">Live</span>
+          <span class="p-cat">AI Product · UK Regtech</span>
+        </div>
+        <div class="p-title">Regulatory Intelligence</div>
+        <p class="p-desc">A grounded, guardrailed compliance assistant over the FCA cryptoasset regime — built to decline as reliably as it answers. Hybrid RAG, a frozen evaluation set, and a tiered release gate where one unsafe answer blocks the ship.</p>
+        <div class="p-metrics">
+          <div class="p-metric"><span class="pv">0</span><span class="pk">Tier-1 violations</span></div>
+          <div class="p-metric"><span class="pv">0.6%</span><span class="pk">Hallucination rate</span></div>
+          <div class="p-metric"><span class="pv">33/36</span><span class="pk">Golden cases passed</span></div>
+        </div>
+      </a>
+      <a class="proj" href="/arms-length-check">
+        <div class="p-top">
+          <span class="p-concept">Concept</span>
+          <span class="p-cat">Product Strategy · Higher-Ed Research SaaS</span>
+        </div>
+        <div class="p-title">Arm's Length Check</div>
+        <p class="p-desc">Conflict-of-interest screening for external reviewers in university tenure cases, built on public research data. Four data tests showed the data finds every shared paper but can't reliably tell same-name researchers apart, so I re-scoped to "identify, then check". PRD, business case, prototype and a tested rules engine, built spec-first with AI agents.</p>
+        <div class="p-metrics">
+          <div class="p-metric"><span class="pv">100%</span><span class="pk">Shared papers found (data tests)</span></div>
+          <div class="p-metric"><span class="pv">86%</span><span class="pk">Name-only identity, so re-scoped</span></div>
+          <div class="p-metric"><span class="pv">0</span><span class="pk">Rules run on an unconfirmed person</span></div>
+        </div>
+      </a>
+      <a class="proj" href="https://contract-exposure-copilot.lovable.app" target="_blank" rel="noopener">
+        <div class="p-top">
+          <span class="p-live">Live</span>
+          <span class="p-cat">AI Product · Commodities &amp; Chemicals</span>
+        </div>
+        <div class="p-title">Contract Exposure Copilot</div>
+        <p class="p-desc">A customer-deployed product concept for chemicals procurement teams that turns index-linked supply contracts and benchmark prices into forward cost exposure, a ranked list of actions, and AI-drafted supplier emails. Every figure is checked against the calculation engine. It comes with a validated discovery plan, a 13-week route to a paid pilot, and a business case.</p>
+        <div class="p-metrics">
+          <div class="p-metric"><span class="pv">13 weeks</span><span class="pk">Plan to a paid pilot</span></div>
+          <div class="p-metric"><span class="pv">£20k</span><span class="pk">New spend to prove or kill it</span></div>
+          <div class="p-metric"><span class="pv">100%</span><span class="pk">AI figures checked against the engine</span></div>
+        </div>
+      </a>
+      <a class="proj" href="/hotel-reshopping">
+        <div class="p-top">
+          <span class="p-concept">Concept</span>
+          <span class="p-cat">Product Strategy · Corporate Travel</span>
+        </div>
+        <div class="p-title">Hotel Reshopping</div>
+        <p class="p-desc">An outside-in case for scaling post-booking hotel savings in corporate travel, built on one rule: a saving only counts when the hotel bill proves it. It includes the strategy, a clickable prototype, a live economics model and an engineering brief.</p>
+        <div class="p-metrics">
+          <div class="p-metric"><span class="pv">77.6%</span><span class="pk">Found savings realised (modelled)</span></div>
+          <div class="p-metric"><span class="pv">£0.47m</span><span class="pk">Contribution per 1M room nights</span></div>
+          <div class="p-metric"><span class="pv">88%</span><span class="pk">Rebooks automated (modelled)</span></div>
+        </div>
+      </a>
+      <a class="proj" href="/hotel-reshopping-deck">
+        <div class="p-top">
+          <span class="p-deck">Business case</span>
+          <span class="p-cat">Leadership Pitch · Corporate Travel</span>
+        </div>
+        <div class="p-title">Hotel Reshopping: Business Case</div>
+        <p class="p-desc">A 13-slide deck asking leadership for a six-month pilot. It covers the market and the trust gap, three strategic moves, the commercial model, unit economics, a three-year case with sensitivities, rollout gates, the roadmap and risks, ending on a clear decision.</p>
+        <div class="p-metrics">
+          <div class="p-metric"><span class="pv">£0.75m</span><span class="pk">Pilot ask, six months</span></div>
+          <div class="p-metric"><span class="pv">3.2M</span><span class="pk">Room nights a year to break even</span></div>
+          <div class="p-metric"><span class="pv">£2.1m</span><span class="pk">Annual return at scale (modelled)</span></div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- CONNECT -->
+  <section id="connect" class="reveal">
+    <div class="sec-head" style="justify-content:center"><span class="sec-num">06</span><h2>Let's connect</h2></div>
+    <p class="c-sub">Open to Senior PM roles in B2B SaaS, financial services, and AI products. The fastest way to reach me:</p>
+    <div class="connect-grid">
+      <a class="connect-card" href="mailto:shiva41.prasad@gmail.com">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg></span>
+        <span><span class="cc-k">Email</span><span class="cc-v">shiva41.prasad@gmail.com</span></span>
+      </a>
+      <a class="connect-card" href="https://www.linkedin.com/in/shivaprasadpidishetti/" target="_blank" rel="noopener">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zM8.34 17V9.99H6V17h2.34zM7.17 8.93a1.36 1.36 0 1 0 0-2.72 1.36 1.36 0 0 0 0 2.72zM18 17v-3.85c0-2.04-1.09-2.99-2.54-2.99-1.17 0-1.7.64-1.99 1.09V9.99h-2.34V17h2.34v-3.91c0-.21.02-.41.08-.56.16-.41.54-.84 1.17-.84.83 0 1.16.63 1.16 1.55V17H18z"/></svg></span>
+        <span><span class="cc-k">LinkedIn</span><span class="cc-v">in/shivaprasadpidishetti</span></span>
+      </a>
+      <a class="connect-card" href="https://github.com/Shivap41?tab=repositories" target="_blank" rel="noopener">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02.8-.22 1.65-.33 2.5-.33.85 0 1.7.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85 0 1.34-.01 2.42-.01 2.75 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg></span>
+        <span><span class="cc-k">GitHub</span><span class="cc-v">github.com/Shivap41</span></span>
+      </a>
+    </div>
+  </section>
+
+  <footer>© 2026 Shiva Prasad Pidishetti · Senior Product Manager · London, UK</footer>
+
+</div>
+
+<script>
+  // sticky nav border
+  var nav=document.getElementById('nav');
+  window.addEventListener('scroll',function(){nav.classList.toggle('stuck',window.scrollY>10)},{passive:true});
+  // reveal
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:.1});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+</script>
+</body>
+</html>
