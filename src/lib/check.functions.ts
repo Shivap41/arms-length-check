@@ -70,3 +70,22 @@ export const checkReviewer = createServerFn({ method: "POST" })
       declarations: declarations.data.map(entry => ({ name: entry.declared_name, relationship: entry.relationship as "advisor", note: entry.note })),
     }, { calls: () => ({ fresh, cached }) });
   });
+
+/**
+ * D58: prefetch the candidate's profile, works and ORCID employments the moment the candidate is
+ * confirmed, before any reviewer check starts. Runs under the user's client (RLS) and the
+ * screening's id, so later reviewer checks share its cache entries and in-flight requests.
+ */
+export const prefetchCandidate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => z.object({ screeningId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = context.supabase;
+    const screening = await db.from("screenings").select("case_id").eq("id", data.screeningId).maybeSingle();
+    if (screening.error || !screening.data) return { ok: false as const, error: "Screening not found", durationMs: 0 };
+    const caseRow = await db.from("cases").select("candidate_orcid, candidate_profile_ids, candidate_identity_status, candidate_identity_method").eq("id", screening.data.case_id).single();
+    if (caseRow.error || caseRow.data.candidate_identity_status !== "confirmed" || !caseRow.data.candidate_profile_ids.length) return { ok: false as const, error: "Candidate not confirmed", durationMs: 0 };
+    const { serverSources } = await import("@/lib/server-sources.server");
+    const { prefetchCandidateCore } = await import("@/lib/prefetch.server");
+    return prefetchCandidateCore(await serverSources(data.screeningId), { profileIds: caseRow.data.candidate_profile_ids, orcid: caseRow.data.candidate_identity_method === "orcid" ? caseRow.data.candidate_orcid : null });
+  });

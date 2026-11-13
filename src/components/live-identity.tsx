@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseProfileLink, SEARCH_FAILED_MESSAGE, type IdentifyResult, type LiveProfile } from "@/lib/identity";
 import {
-  canStartLiveChecks, getLiveScreening, identifyLive, listLiveScreeningNames, liveResultLabels, needsCheckStart, resolveLiveLink, saveLiveCandidateIdentity, saveLiveReviewerIdentity, shouldAutoApply, startLiveCheck,
+  canStartLiveChecks, getLiveScreening, identifyLive, listLiveScreeningNames, liveResultLabels, needsCheckStart, prefetchLiveCandidate, resolveLiveLink, saveLiveCandidateIdentity, saveLiveReviewerIdentity, shouldAutoApply, startLiveCheck,
   type LiveCase, type LiveIdentity, type LiveIdentityChoice, type LiveScreening, type LiveScreeningName, type Reviewer,
 } from "@/data/screeningService";
 
@@ -192,6 +192,17 @@ export function LiveIdentityStep({ caseRecord, reviewers, onCaseChange }: { case
       startCheck(screening.id, row.id);
     }
   }, [screening, startCheck]);
+  // D58: once the candidate is confirmed and the screening exists, warm the candidate's data
+  // so reviewer checks don't each wait for it.
+  const prefetched = useRef(new Set<string>());
+  useEffect(() => {
+    if (!screening || !candidateConfirmed) return;
+    const key = `${screening.id}:${caseRecord.candidateIdentity.profileIds.join("+")}`;
+    if (prefetched.current.has(key)) return;
+    prefetched.current.add(key);
+    void prefetchLiveCandidate(screening.id);
+  }, [screening, candidateConfirmed, caseRecord.candidateIdentity.profileIds]);
+
   // Poll stages while anything is running.
   const anyRunning = Boolean(screening?.names.some(row => row.identity.status === "confirmed" && row.checkStatus === "running")) || inflightCount > 0;
   useEffect(() => {

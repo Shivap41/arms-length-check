@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveSession } from "@/lib/research-session";
 import { checkDataConnection as checkConnection } from "@/lib/data-connection.functions";
 import { identifyPerson, resolveProfileLink } from "@/lib/identity.functions";
-import { checkReviewer } from "@/lib/check.functions";
+import { checkReviewer, prefetchCandidate } from "@/lib/check.functions";
 import { isValidOrcid, NO_INDEXED_WORKS, type IdentifyResult, type ResolveResult } from "@/lib/identity";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
@@ -592,3 +592,9 @@ export function needsCheckStart(row: LiveScreeningName, now = Date.now()): boole
   return row.checkStatus === "running" && (!row.checkStartedAt || now - Date.parse(row.checkStartedAt) > LIVE_CHECK_STALE_MS);
 }
 export const liveResultLabels: Record<LiveResult, string> = { conflict: "Conflict", potential: "Potential", insufficient: "Insufficient data", no_conflict: "No conflict found" };
+/** D58: warm the candidate's data as soon as they're confirmed. Best effort; never throws. */
+export async function prefetchLiveCandidate(screeningId: string): Promise<{ ok: boolean; durationMs: number }> {
+  identifier.parse(screeningId);
+  try { const result = await prefetchCandidate({ data: { screeningId } }); return { ok: result.ok, durationMs: result.durationMs }; }
+  catch { return { ok: false, durationMs: 0 }; }
+}
