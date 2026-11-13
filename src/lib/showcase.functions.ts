@@ -24,7 +24,9 @@ async function gate(accessCode: string | null | undefined, allowedWithoutCode: b
 async function sources(session: string, counter?: { fresh: number; cached: number }) {
   const { serverSources } = await import("@/lib/server-sources.server");
   const { takeFreshCall } = await import("@/lib/showcase.server");
-  return serverSources(`showcase:${session}`, counter ? fromCache => { if (fromCache) counter.cached++; else counter.fresh++; } : undefined, takeFreshCall);
+  // Cloudflare Workers forbid resolving a promise from another request's context, so the limiter and
+  // in-flight map are scoped to this request (a fresh id per call). The 24-hour cache is still shared.
+  return serverSources(`showcase:${session}:${crypto.randomUUID()}`, counter ? fromCache => { if (fromCache) counter.cached++; else counter.fresh++; } : undefined, takeFreshCall);
 }
 
 /** Checks an access code (server-side). */

@@ -16,11 +16,17 @@ export function newShowcaseSession(): string { return crypto.randomUUID(); }
 export async function verifyShowcaseCode(code: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try { return await showcaseVerifyCode({ data: { code } }); } catch { return { ok: false, error: "Couldn't reach the server. Try again." }; }
 }
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+/** A missing or malformed response is an error ("Couldn't search"), never an empty result. */
 export async function showcaseIdentifyPerson(session: string, code: string | null, input: { typedName: string; typedInstitution: string; typedOrcid?: string | null }): Promise<IdentifyResult> {
-  return showcaseIdentify({ data: { session, code, ...input } }) as Promise<IdentifyResult>;
+  const result: unknown = await showcaseIdentify({ data: { session, code, ...input } });
+  if (!isObject(result) || typeof result["status"] !== "string") throw new Error("Malformed identify response");
+  return result as IdentifyResult;
 }
 export async function showcaseResolveLink(session: string, code: string | null, link: string): Promise<ResolveResult> {
-  return showcaseResolve({ data: { session, code, link } });
+  const result: unknown = await showcaseResolve({ data: { session, code, link } });
+  if (!isObject(result) || typeof result["ok"] !== "boolean") return { ok: false, error: "Couldn't search: try again" };
+  return result as ResolveResult;
 }
 export async function showcasePrefetchCandidate(session: string, code: string | null, profileIds: string[], orcid: string | null): Promise<void> {
   try { await showcasePrefetch({ data: { session, code, profileIds, orcid } }); } catch { /* best effort */ }
@@ -28,6 +34,7 @@ export async function showcasePrefetchCandidate(session: string, code: string | 
 export async function showcaseRunCheck(session: string, code: string | null, candidate: { profileIds: string[]; orcid: string | null }, reviewer: { profileIds: string[]; typedName: string }): Promise<ShowcaseCheckResult> {
   try {
     const result = await showcaseCheck({ data: { session, code, candidate, reviewer } });
+    if (!isObject(result) || (result.status !== "done" && result.status !== "failed")) return { status: "failed", error: "Couldn't check: the server didn't respond", quota: false, notes: null };
     if (result.status === "done") return { status: "done", result: result.result as "conflict", reason: result.reason, findings: JSON.parse(result.findingsJson) as ShowcaseFinding[], notes: result.notes };
     return { status: "failed", error: result.error, quota: result.quota, notes: result.notes };
   } catch { return { status: "failed", error: "Couldn't check: the server didn't respond", quota: false, notes: null }; }
