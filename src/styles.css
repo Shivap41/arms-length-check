@@ -488,3 +488,14 @@
 .evidence-works a svg { display: inline; width: 12px; height: 12px; margin-left: 4px; }
 .evidence-year { min-width: 40px; color: var(--muted-foreground); }
 .evidence-meta { display: block; font-size: 12px; color: var(--muted-foreground); }
+
+/* Admin pages (B5, B6) */
+.admin-page .admin-table td, .admin-page .admin-table th { font-size: 13px; vertical-align: top; }
+.admin-pass { color: #03543F; font-weight: 500; }
+.admin-fail { color: #9B1C1C; font-weight: 500; }
+.admin-pass svg, .admin-fail svg { display: inline; width: 14px; height: 14px; margin-right: 4px; }
+.admin-miss { background: #FEF3C7; }
+.admin-load { margin: 16px 0; display: grid; gap: 10px; }
+.admin-load textarea { width: 100%; font-family: monospace; font-size: 12px; }
+.admin-actions { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.admin-misses { font-size: 14px; display: grid; gap: 4px; }

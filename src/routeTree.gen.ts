@@ -17,6 +17,8 @@ import { Route as CommitteesRouteImport } from './routes/committees'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SessionRouteImport } from './routes/session'
 import { Route as TemplatesRouteImport } from './routes/templates'
+import { Route as AdminRegressionRouteImport } from './routes/admin.regression'
+import { Route as AdminSelftestRouteImport } from './routes/admin.selftest'
 import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
 import { Route as SessionIndexRouteImport } from './routes/session.index'
@@ -65,6 +67,16 @@ const SessionRoute = SessionRouteImport.update({
 const TemplatesRoute = TemplatesRouteImport.update({
   id: '/templates',
   path: '/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRegressionRoute = AdminRegressionRouteImport.update({
+  id: '/admin/regression',
+  path: '/admin/regression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSelftestRoute = AdminSelftestRouteImport.update({
+  id: '/admin/selftest',
+  path: '/admin/selftest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasesIndexRoute = CasesIndexRouteImport.update({
@@ -128,6 +140,8 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/session': typeof SessionRouteWithChildren
   '/templates': typeof TemplatesRoute
+  '/admin/regression': typeof AdminRegressionRoute
+  '/admin/selftest': typeof AdminSelftestRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/session/brief': typeof SessionBriefRoute
   '/session/results': typeof SessionResultsRoute
@@ -145,6 +159,8 @@ export interface FileRoutesByTo {
   '/committees': typeof CommitteesRoute
   '/reports': typeof ReportsRoute
   '/templates': typeof TemplatesRoute
+  '/admin/regression': typeof AdminRegressionRoute
+  '/admin/selftest': typeof AdminSelftestRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/session/brief': typeof SessionBriefRoute
   '/session/results': typeof SessionResultsRoute
@@ -166,6 +182,8 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/session': typeof SessionRouteWithChildren
   '/templates': typeof TemplatesRoute
+  '/admin/regression': typeof AdminRegressionRoute
+  '/admin/selftest': typeof AdminSelftestRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
   '/session/brief': typeof SessionBriefRoute
   '/session/results': typeof SessionResultsRoute
@@ -187,6 +205,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/session'
     | '/templates'
+    | '/admin/regression'
+    | '/admin/selftest'
     | '/cases/$caseId'
     | '/session/brief'
     | '/session/results'
@@ -204,6 +224,8 @@ export interface FileRouteTypes {
     | '/committees'
     | '/reports'
     | '/templates'
+    | '/admin/regression'
+    | '/admin/selftest'
     | '/cases/$caseId'
     | '/session/brief'
     | '/session/results'
@@ -224,6 +246,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/session'
     | '/templates'
+    | '/admin/regression'
+    | '/admin/selftest'
     | '/cases/$caseId'
     | '/session/brief'
     | '/session/results'
@@ -245,6 +269,8 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SessionRoute: typeof SessionRouteWithChildren
   TemplatesRoute: typeof TemplatesRoute
+  AdminRegressionRoute: typeof AdminRegressionRoute
+  AdminSelftestRoute: typeof AdminSelftestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -303,6 +329,20 @@ declare module '@tanstack/react-router' {
       path: '/templates'
       fullPath: '/templates'
       preLoaderRoute: typeof TemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/regression': {
+      id: '/admin/regression'
+      path: '/admin/regression'
+      fullPath: '/admin/regression'
+      preLoaderRoute: typeof AdminRegressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/selftest': {
+      id: '/admin/selftest'
+      path: '/admin/selftest'
+      fullPath: '/admin/selftest'
+      preLoaderRoute: typeof AdminSelftestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cases/': {
@@ -434,6 +474,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SessionRoute: SessionRouteWithChildren,
   TemplatesRoute: TemplatesRoute,
+  AdminRegressionRoute: AdminRegressionRoute,
+  AdminSelftestRoute: AdminSelftestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

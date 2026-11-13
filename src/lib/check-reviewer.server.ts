@@ -99,7 +99,7 @@ function orcidCurrent(employments: Employment[], known: InstitutionRecord[], thi
 }
 
 /** Runs one reviewer check. Never throws: every outcome is reported through the store. */
-export async function runReviewerCheck(sources: CheckSources, store: CheckStore, input: CheckInput, metrics: { calls: () => { fresh: number; cached: number }; now?: () => number } ): Promise<{ status: "done"; result: ResultValue } | { status: "failed"; error: string }> {
+export async function runReviewerCheck(sources: CheckSources, store: CheckStore, input: CheckInput, metrics: { calls: () => { fresh: number; cached: number }; now?: () => number } ): Promise<{ status: "done"; result: ResultValue } | { status: "failed"; error: string; errorType: string }> {
   const now = metrics.now ?? Date.now;
   const started = now();
   let stage: CheckStage = "publications";
@@ -154,6 +154,6 @@ export async function runReviewerCheck(sources: CheckSources, store: CheckStore,
   } catch (error) {
     const message = error instanceof SourceError ? failureMessages[error.type] : error instanceof Error && error.message === "Identity not confirmed" ? "Couldn't check: identity not confirmed" : "Couldn't check: something went wrong";
     try { await store.fail(message, notes({ failedAt: stage })); } catch { /* the row stays "running"; the page offers Retry */ }
-    return { status: "failed", error: message };
+    return { status: "failed", error: message, errorType: error instanceof SourceError ? error.type : "Other" };
   }
 }
