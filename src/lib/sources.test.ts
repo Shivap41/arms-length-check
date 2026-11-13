@@ -111,6 +111,27 @@ describe("source request rules", () => {
     const url = new URL(String(s.fetcher.mock.calls[0]?.[0]));
     expect(url.searchParams.get("filter")).toBe("authorships.author.id:A1|A2,authorships.author.id:A3|A4");
   });
+  it("pages through every shared work instead of stopping at the first 200", async () => {
+    const work = (n: number) => ({ id: `W${n}`, doi: null, title: `Paper ${n}`, publication_year: 2024, type: "article", authorships: [] });
+    const pages = [
+      { results: Array.from({ length: 200 }, (_, i) => work(i)), meta: { next_cursor: "c1" } },
+      { results: Array.from({ length: 200 }, (_, i) => work(200 + i)), meta: { next_cursor: "c2" } },
+      { results: [work(400)], meta: { next_cursor: "c3" } },
+      { results: [], meta: { next_cursor: null } },
+    ];
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => Response.json(pages.shift()));
+    const s = setup(fetcher);
+    const result = await s.sources.getSharedWorks(["A1"], ["A2"]);
+    expect(result.data).toHaveLength(401);
+    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(new URL(String(fetcher.mock.calls[0]?.[0])).searchParams.get("cursor")).toBe("*");
+    expect(new URL(String(fetcher.mock.calls[1]?.[0])).searchParams.get("cursor")).toBe("c1");
+  });
+  it("fails instead of returning a partial list when shared works exceed the page cap", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => Response.json({ results: [{ id: "W1", doi: null, title: "x", publication_year: 2024, type: "article", authorships: [] }], meta: { next_cursor: "more" } }));
+    const s = setup(fetcher);
+    await expect(s.sources.getSharedWorks(["A1"], ["A2"])).rejects.toMatchObject({ type: "Upstream" });
+  });
   it("returns institution type", async () => {
     const s = setup(vi.fn<typeof fetch>().mockResolvedValue(Response.json({ id: "I1", display_name: "Example", type: "education" })));
     expect((await s.sources.getInstitution("I1")).data.type).toBe("education");

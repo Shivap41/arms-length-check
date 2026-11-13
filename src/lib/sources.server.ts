@@ -15,6 +15,8 @@ export const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 export const TIMEOUT_MS = 10_000;
 export const MAX_RETRIES = 2;
 export const MAX_IN_FLIGHT = 4;
+/** Shared works are paged to the end; 50 pages = 10,000 works, far above any real pair. */
+export const MAX_SHARED_PAGES = 50;
 const authorSchema = z.object({ id: z.string(), display_name: z.string() }).passthrough();
 const institutionSchema = z.object({ id: z.string(), display_name: z.string(), type: z.string().nullable() }).passthrough();
 const workSchema = z.object({
@@ -157,8 +159,18 @@ export function createSources(options: {
     },
     getSharedWorks: async (idsA: string[], idsB: string[]): Promise<CachedResponse<Work[]>> => {
       const ids = (values: string[]) => z.array(z.string()).min(1).max(100).parse(values).map(id => entityId(id, "A")).sort().join("|");
-      const result = await request("openalex", "/works", { ...worksParams, filter: `authorships.author.id:${ids(idsA)},authorships.author.id:${ids(idsB)}` }, worksPageSchema);
-      return { data: result.data.results, fromCache: result.fromCache };
+      // Page through every shared work: a truncated list would hide co-authorships.
+      const filter = `authorships.author.id:${ids(idsA)},authorships.author.id:${ids(idsB)}`;
+      let cursor: string | null = "*";
+      const data: Work[] = [];
+      let fromCache = true;
+      for (let page = 0; cursor; page++) {
+        if (page >= MAX_SHARED_PAGES) throw new SourceError("Upstream"); // never return a silently partial list
+        const result: CachedResponse<z.infer<typeof worksPageSchema>> = await request("openalex", "/works", { ...worksParams, filter, cursor }, worksPageSchema);
+        data.push(...result.data.results); fromCache &&= result.fromCache;
+        cursor = result.data.results.length ? result.data.meta.next_cursor ?? null : null;
+      }
+      return { data, fromCache };
     },
   };
 }

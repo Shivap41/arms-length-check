@@ -444,7 +444,9 @@
 .auth-card h1 { margin: 0 0 10px; font-size: 22px; font-weight: 500; }
 .auth-card > p { color: var(--muted-foreground); font-size: 14px; line-height: 1.6; margin: 0 0 20px; }
 .auth-actions { display: flex; flex-direction: column; gap: 10px; }
-.google-auth-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px 12px; background: #FFFFFF; border: 1px solid #747775; border-radius: 4px; color: #1F1F1F; font-size: 14px; font-weight: 500; cursor: pointer; }
-.google-auth-button:hover { background: #F7F8F8; }
-.google-auth-button:disabled, .lovable-auth-button:disabled { opacity: 0.6; cursor: default; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+.auth-field input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 4px; font: inherit; font-weight: 400; }
+.auth-submit { margin-top: 6px; padding: 10px 12px; background: var(--primary); color: var(--primary-foreground); border: 0; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
+.auth-switch { margin-top: 16px; padding: 0; background: none; border: 0; color: var(--primary); font-size: 14px; cursor: pointer; }
 .auth-card .field-error { margin-top: 14px; }

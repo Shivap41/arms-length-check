@@ -30,3 +30,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files: never commit (D56). Secrets live in .env.local only.
+.env*
+!.env.example
+.claude/
+supabase/.temp/

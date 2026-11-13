@@ -29,6 +29,13 @@
       "when": 1794538935813,
       "tag": "0003_protect_server_api_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794600000000,
+      "tag": "0004_tighten_default_grants",
+      "breakpoints": true
     }
   ]
 }
