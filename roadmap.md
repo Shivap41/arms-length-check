@@ -39,4 +39,9 @@
 - [x] Demo/Live data mode with a Cases toggle; session mode always uses the demo.
 - [x] Live case tables with per-user access rules; sign-in (Google, Lovable) and protected live routes.
 - [x] New live case form, live reviewers and paste list, declarations form, candidate confirmation.
-- [ ] Live conflict checking via OpenAlex/ORCID calls and the API cache (next step).
+- [ ] Full live conflict screening (future scope; this request supplies source access and connection testing only).
+
+# Shared live data sources
+- [x] Centralize OpenAlex and ORCID access with 24-hour caching, typed failures, retries, timeout, and concurrency limit.
+- [x] Protect the API cache from browser writes and add an authenticated health check with a Live Cases button.
+- [x] Test source rules and verify a signed-in connection check and cache hit.

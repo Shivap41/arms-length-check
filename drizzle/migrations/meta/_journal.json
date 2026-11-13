@@ -22,6 +22,13 @@
       "when": 1794538249874,
       "tag": "0002_create_live_mode_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794538935813,
+      "tag": "0003_protect_server_api_cache",
+      "breakpoints": true
     }
   ]
 }

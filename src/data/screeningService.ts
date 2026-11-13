@@ -2,6 +2,7 @@ import { z } from "zod";
 import { demoScenario, demoChoiceKey, type DemoAnswer, type DemoProfile, type DemoResult, type DemoReviewer, type DemoScenario } from "./demoScenario";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveSession } from "@/lib/research-session";
+import { checkDataConnection as checkConnection } from "@/lib/data-connection.functions";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
 export const identitySchema = z.string().trim().max(500, "Profile link is too long.").refine(value => {
@@ -409,6 +410,7 @@ export async function listLiveCases(): Promise<LiveCase[]> {
   if (error) throw new Error("Couldn't load live cases.");
   return (data ?? []).map(mapLiveCase);
 }
+export async function checkLiveDataConnection() { return checkConnection(); }
 export async function createLiveCase(input: LiveCaseInput): Promise<LiveCase> {
   const parsed = liveCaseSchema.parse(input);
   const { data, error } = await supabase.from("cases").insert({ title: `External review — ${parsed.candidateName}`, candidate_name: parsed.candidateName, candidate_institution: parsed.institution, candidate_orcid: parsed.orcid || null }).select().single();
