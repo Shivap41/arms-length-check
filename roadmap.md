@@ -27,3 +27,7 @@
 - [x] Add candidate declarations and a results backlink.
 - [x] Add validated chair decisions, reasons, and decided progress.
 - [x] Add gated printable HTML audit download and verify the full flow.
+# Research session mode
+- [x] Session start page, printable reviewer notes, header badge.
+- [x] Non-blocking identity event logging to the database.
+- [x] Passcode-protected results with accuracy, timings, and CSV export.
