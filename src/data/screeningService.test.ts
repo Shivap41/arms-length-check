@@ -37,10 +37,10 @@ describe("Prototype screening", () => {
     const rows = addReviewers("ortiz-2027", [{ name: "Ada", institution: "University" }]);
     const row = rows[0]; if (!row) throw new Error("Missing row");
     setCandidateConfirmed("ortiz-2027", true); const id = startScreening("ortiz-2027");
-    confirmIdentity(id, row.id, "confirmed"); recordDecision(id, row.id, "needs-review"); removeReviewer("ortiz-2027", row.id);
+    confirmIdentity(id, row.id, "confirmed"); startScreening("ortiz-2027", id); recordDecision(id, row.id, "exclude"); removeReviewer("ortiz-2027", row.id);
     expect(listReviewers("ortiz-2027")).toEqual([]);
     expect(getScreening(id)?.identityChoices[row.id]).toBe("confirmed");
-    expect(getScreening(id)?.decisions[row.id]).toBe("needs-review");
+    expect(getScreening(id)?.decisions[row.id]?.decision).toBe("exclude");
     expect(getScreening(id)?.reviewers.length).toBe(1);
   });
 });

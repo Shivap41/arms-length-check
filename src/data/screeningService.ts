@@ -20,9 +20,9 @@ export const reviewerSchema = z.object({
 });
 export type ReviewerInput = z.input<typeof reviewerSchema>;
 export type Reviewer = z.output<typeof reviewerSchema> & { id: string };
-export type CaseRecord = { id: string; title: string; candidate: string; subtitle: string; candidateConfirmed: boolean; candidateProfile?: DemoScenario["candidate"] };
+export type CaseRecord = { id: string; title: string; candidate: string; subtitle: string; candidateConfirmed: boolean; candidateProfile?: DemoScenario["candidate"]; declarations: { submitted: string; formerPhdAdvisor: string; postdoctoralMentor: string; personalOrFinancialTies: string } };
 export type IdentityChoice = "confirmed" | "not-a-match" | "unsure" | "undo" | "undo-last" | DemoAnswer | { action: "paste-profile"; link: string };
-export type ScreeningDecision = "invite" | "exclude" | "needs-review";
+export type ScreeningDecision = { decision: "approve" | "exclude"; reason: string; decidedBy: string; decidedAt: string };
 export type Screening = { id: string; caseId: string; reviewers: Reviewer[]; identityChoices: Record<string, IdentityChoice>; identitySources: Record<string, "orcid" | "chair">; decisions: Record<string, ScreeningDecision>; results: Record<string, DemoResult>; resultsReady: boolean };
 export type IdentityProfile = DemoProfile;
 export type ResultStatus = DemoResult["status"];
@@ -33,7 +33,7 @@ export type IdentityReview = { reviewer: Reviewer; brief: string; options: Ident
 type IdentityHistory = { reviewerId: string; choice: IdentityChoice | undefined; source: "orcid" | "chair" | undefined; result: DemoResult | undefined };
 
 // Browser-session memory only; no storage, network calls, or server mutations.
-const caseRecord: CaseRecord = { id: "ortiz-2027", title: "Tenure review — Dr. Maya Ortiz", candidate: "Dr. Maya Ortiz", subtitle: "Associate Professor of Chemistry → Professor with tenure · Northbridge University · Cycle 2026–27", candidateConfirmed: false };
+const caseRecord: CaseRecord = { id: "ortiz-2027", title: "Tenure review — Dr. Maya Ortiz", candidate: "Dr. Maya Ortiz", subtitle: "Associate Professor of Chemistry → Professor with tenure · Northbridge University · Cycle 2026–27", candidateConfirmed: false, declarations: { submitted: "2 Oct 2026", formerPhdAdvisor: "Marco Bianchi, University of Eastmoor", postdoctoralMentor: "none declared", personalOrFinancialTies: "none declared" } };
 let reviewers: Reviewer[] = [];
 const screenings = new Map<string, Screening>();
 const identityHistory = new Map<string, IdentityHistory[]>();
@@ -118,6 +118,7 @@ export function confirmIdentity(screeningId: string, nameId: string, choice: Ide
   if (parsed === "undo-last") {
     const last = history.pop();
     if (!last) return;
+    delete screening.decisions[last.reviewerId];
     if (last.choice) screening.identityChoices[last.reviewerId] = structuredClone(last.choice); else delete screening.identityChoices[last.reviewerId];
     if (last.source) screening.identitySources[last.reviewerId] = last.source; else delete screening.identitySources[last.reviewerId];
     if (last.result) screening.results[last.reviewerId] = structuredClone(last.result); else delete screening.results[last.reviewerId];
@@ -143,6 +144,7 @@ export function confirmIdentity(screeningId: string, nameId: string, choice: Ide
   } else resolved = { status: "Insufficient data", rule: null, explanation: "Identity not confirmed", sharedPapers: [], wrongPerson: false };
   history.push({ reviewerId: nameId, choice: screening.identityChoices[nameId], source: screening.identitySources[nameId], result: screening.results[nameId] });
   identityHistory.set(screeningId, history);
+  delete screening.decisions[nameId];
   const matches = nameMatches.get(screeningId);
   if (matches) delete matches[nameId];
   screening.resultsReady = false;
@@ -191,6 +193,7 @@ export function confirmNameMatch(screeningId: string, reviewerId: string, choice
   const current = screening.results[reviewerId];
   if (!screening.resultsReady || !current?.sharedPapers.some(paper => paper.authorIdMissing)) throw new Error("No name-only paper match to review.");
   const matches = nameMatches.get(screeningId) ?? {};
+  delete screening.decisions[reviewerId];
   matches[reviewerId] = parsed; nameMatches.set(screeningId, matches);
   screening.results[reviewerId] = { ...current, status: parsed === "confirmed" ? "Conflict" : "No conflict found", rule: parsed === "confirmed" ? "R1" : null, explanation: parsed === "confirmed" ? "Co-wrote 1 paper with the candidate (2022)" : "The name-only paper belongs to a different person." };
 }
@@ -215,7 +218,33 @@ export function countResults(rows: ResultRow[]): Record<ResultStatus, number> {
   for (const row of rows) counts[row.result.status]++;
   return counts;
 }
-export function recordDecision(screeningId: string, nameId: string, decision: ScreeningDecision): void { const screening = requireScreening(screeningId, nameId); screening.decisions[nameId] = z.enum(["invite", "exclude", "needs-review"]).parse(decision); }
+export function recordDecision(screeningId: string, nameId: string, decision: ScreeningDecision["decision"], reason = ""): void {
+  const screening = requireScreening(screeningId, nameId);
+  const result = screening.results[nameId];
+  if (!screening.resultsReady || !result) throw new Error("Review results before recording a decision.");
+  const parsed = z.enum(["approve", "exclude"]).parse(decision);
+  const trimmed = z.string().trim().max(2000).parse(reason);
+  if (parsed === "approve" && (result.status === "Conflict" || result.status === "Potential") && trimmed.length < 10) throw new Error("Enter a reason of at least 10 characters.");
+  screening.decisions[nameId] = { decision: parsed, reason: parsed === "approve" ? trimmed : "", decidedBy: "Dr. Lena Hoffmann", decidedAt: new Date().toISOString() };
+}
+export function countDecisions(screening: Screening): number { return screening.reviewers.filter(row => Boolean(screening.decisions[row.id])).length; }
+export function canDownloadAudit(screening: Screening): boolean { return screening.resultsReady && screening.reviewers.length > 0 && countDecisions(screening) === screening.reviewers.length; }
+export type AuditRecord = { case: string; candidate: string; date: string; reviewers: { name: string; institution: string; identityMethod: string; result: ResultStatus; reason: string; evidence: { label: string; url?: string | undefined }[]; decision: ScreeningDecision }[] };
+export function getAuditRecord(screeningId: string): AuditRecord {
+  const screening = getScreening(screeningId);
+  if (!screening || !canDownloadAudit(screening)) throw new Error("Decide every reviewer before downloading the audit record.");
+  return { case: caseRecord.title, candidate: caseRecord.candidate, date: new Date().toISOString(), reviewers: getResultRows(screening).map(row => {
+    const decision = screening.decisions[row.reviewer.id];
+    if (!decision) throw new Error("Missing reviewer decision.");
+    const choice = screening.identityChoices[row.reviewer.id];
+    const identityMethod = row.source === "ORCID" ? "ORCID auto-confirmed" : typeof choice === "object" && choice.action === "paste-orcid" ? "Chair — pasted ORCID" : typeof choice === "object" && choice.action === "select-profiles" ? `Chair — ${choice.profileIds.length > 1 ? "merged profiles" : "profile selection"}` : "Chair — can't tell";
+    const evidence: AuditRecord["reviewers"][number]["evidence"] = row.result.sharedPapers.map(paper => ({ label: `${paper.title} (${paper.year}) · ${paper.venue} · ${paper.authorCount} authors${row.nameMatch === "different" ? " · Not counted" : ""}`, url: `https://doi.org/${encodeURIComponent(paper.doi).replace(/%2F/g, "/")}` }));
+    if (row.result.employment) evidence.push({ label: `ORCID current employment: ${row.result.employment.institution}`, url: row.profiles[0]?.orcid ? `https://orcid.org/${row.profiles[0].orcid}` : undefined });
+    if (row.result.declaredRelationship) evidence.push({ label: `Candidate declaration submitted ${caseRecord.declarations.submitted}: former PhD advisor ${caseRecord.declarations.formerPhdAdvisor}`, url: `${window.location.origin}/cases/${screening.caseId}#candidate-declarations` });
+    for (const paper of row.decoyPapers) evidence.push({ label: `${paper.title} (${paper.year}) · Different person · Not counted`, url: `https://doi.org/${paper.doi}` });
+    return { name: row.reviewer.name, institution: row.reviewer.institution, identityMethod, result: row.result.status, reason: row.reason, evidence, decision };
+  }) };
+}
 export function loadDemoReviewers(caseId: string): { loaded: boolean; message: string } {
   browserOnly(); requireCase(caseId);
   reviewers = demoScenario.reviewers.map(demo => ({ ...reviewerSchema.parse({ name: demo.typedName, institution: demo.typedInstitution, identity: demo.typedOrcid ?? "" }), id: demo.id }));

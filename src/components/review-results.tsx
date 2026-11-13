@@ -1,8 +1,11 @@
 import { Fragment, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, ChevronDown, ChevronRight, ExternalLink, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Download, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { confirmNameMatch, countResults, getResultRows, getScreening, resultStatuses, type ResultPaper, type ResultRow, type ResultStatus, type Screening } from "@/data/screeningService";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { downloadAudit } from "@/lib/audit-download";
+import { canDownloadAudit, countDecisions, getAuditRecord, recordDecision, confirmNameMatch, countResults, getResultRows, getScreening, resultStatuses, type ResultPaper, type ResultRow, type ResultStatus, type Screening } from "@/data/screeningService";
 
 const statusClasses: Record<ResultStatus, string> = { Conflict: "status-conflict", Potential: "status-potential", "Insufficient data": "status-insufficient", "No conflict found": "status-clear" };
 function PaperEvidence({ paper, notCounted = false }: { paper: ResultPaper; notCounted?: boolean }) {
@@ -30,21 +33,40 @@ export function ReviewResults({ initialScreening }: { initialScreening: Screenin
   const [screening, setScreening] = useState(initialScreening);
   const [filter, setFilter] = useState<ResultStatus>();
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [approving, setApproving] = useState<ResultRow>();
+  const [decisionReason, setDecisionReason] = useState("");
+  const [decisionError, setDecisionError] = useState("");
   const rows = getResultRows(screening);
   const counts = countResults(rows);
   const visible = filter ? rows.filter(row => row.result.status === filter) : rows;
+  function decide(reviewerId: string, decision: "approve" | "exclude", reason = "") {
+    try {
+      recordDecision(screening.id, reviewerId, decision, reason);
+      const updated = getScreening(screening.id);
+      if (updated) setScreening(updated);
+      setApproving(undefined); setDecisionError("");
+    } catch (error) { setDecisionError(error instanceof Error ? error.message : "Decision could not be recorded."); }
+  }
+  function approve(row: ResultRow) {
+    if (row.result.status === "Conflict" || row.result.status === "Potential") { setApproving(row); setDecisionReason(screening.decisions[row.reviewer.id]?.reason ?? ""); setDecisionError(""); }
+    else decide(row.reviewer.id, "approve");
+  }
   function nameMatch(reviewerId: string, choice: "confirmed" | "different") {
     confirmNameMatch(screening.id, reviewerId, choice);
     const updated = getScreening(screening.id);
     if (updated) setScreening(updated);
   }
   return <>
+    <div className="decision-toolbar"><span role="status">{countDecisions(screening)} of {screening.reviewers.length} decided</span><Button variant="outline" disabled={!canDownloadAudit(screening)} onClick={() => downloadAudit(getAuditRecord(screening.id))}><Download />Download audit record</Button></div>
+    {decisionError && !approving && <p className="field-error" role="alert">{decisionError}</p>}
     <div className="summary-band results-summary" aria-label="Result summary">{resultStatuses.map(status => <Button variant="outline" className={`result-summary-card ${statusClasses[status]}`} key={status} aria-pressed={filter === status} aria-label={`Filter ${status}: ${counts[status]}`} onClick={() => setFilter(filter === status ? undefined : status)}><span className="result-summary-title">{status}</span><span className="result-summary-count">{counts[status]}</span></Button>)}</div>
     <div className="results-heading"><h2 className="identity-section-title">{filter ?? "All reviewers"}</h2><span role="status">{visible.length} of {rows.length} reviewers</span>{filter && <Button variant="link" onClick={() => setFilter(undefined)}>Clear filter<X /></Button>}</div>
-    <div className="results-table-scroll"><table className="results-table"><caption className="sr-only">Reviewer conflict screening results</caption><thead><tr><th>Reviewer</th><th>Result</th><th>Reason</th><th>Evidence</th></tr></thead><tbody>{visible.map(row => {
+    <div className="results-table-scroll"><table className="results-table"><caption className="sr-only">Reviewer conflict screening results</caption><thead><tr><th>Reviewer</th><th>Result</th><th>Reason</th><th>Evidence</th><th>Chair decision</th></tr></thead><tbody>{visible.map(row => {
       const open = expanded.includes(row.reviewer.id);
-      return <Fragment key={row.reviewer.id}><tr className="result-row" data-reviewer-id={row.reviewer.id}><td><strong>{row.reviewer.name}</strong><span className="result-institution">{row.reviewer.institution}</span><span className="result-identity-source">Identity: {row.source}</span><Button variant="link" asChild className="change-result-identity"><Link to="/cases/$caseId/screening" params={{ caseId: screening.caseId }} search={{ screeningId: screening.id, reviewerId: row.reviewer.id }}>Change identity</Link></Button></td><td><span className={`result-chip ${statusClasses[row.result.status]}`}>{row.result.status}</span></td><td>{row.reason}{row.result.status === "No conflict found" && <p className="result-help">No shared papers or institutions found in public data. This is not proof of independence.</p>}{row.result.status === "Insufficient data" && <p className="result-help">Ask the reviewer to confirm independence or add their ORCID.</p>}</td><td><Button variant="link" className="evidence-toggle" aria-expanded={open} aria-controls={`evidence-${row.reviewer.id}`} onClick={() => setExpanded(open ? expanded.filter(id => id !== row.reviewer.id) : [...expanded, row.reviewer.id])}>{open ? "Hide evidence" : "Show evidence"}{open ? <ChevronDown /> : <ChevronRight />}</Button></td></tr>{open && <tr className="evidence-row"><td colSpan={4}><Evidence row={row} onNameMatch={choice => nameMatch(row.reviewer.id, choice)} /></td></tr>}</Fragment>;
-    })}{!visible.length && <tr><td colSpan={4} className="results-empty">No reviewers with this result.</td></tr>}</tbody></table></div>
+      const decision = screening.decisions[row.reviewer.id];
+      return <Fragment key={row.reviewer.id}><tr className="result-row" data-reviewer-id={row.reviewer.id}><td><strong>{row.reviewer.name}</strong><span className="result-institution">{row.reviewer.institution}</span><span className="result-identity-source">Identity: {row.source}</span><Button variant="link" asChild className="change-result-identity"><Link to="/cases/$caseId/screening" params={{ caseId: screening.caseId }} search={{ screeningId: screening.id, reviewerId: row.reviewer.id }}>Change identity</Link></Button></td><td><span className={`result-chip ${statusClasses[row.result.status]}`}>{row.result.status}</span></td><td>{row.reason}{row.result.declaredRelationship && <Button variant="link" asChild className="declaration-link"><Link to="/cases/$caseId" params={{ caseId: screening.caseId }} hash="candidate-declarations">Candidate declarations<ExternalLink /></Link></Button>}{row.result.status === "No conflict found" && <p className="result-help">No shared papers or institutions found in public data. This is not proof of independence.</p>}{row.result.status === "Insufficient data" && <p className="result-help">Ask the reviewer to confirm independence or add their ORCID.</p>}</td><td><Button variant="link" className="evidence-toggle" aria-expanded={open} aria-controls={`evidence-${row.reviewer.id}`} onClick={() => setExpanded(open ? expanded.filter(id => id !== row.reviewer.id) : [...expanded, row.reviewer.id])}>{open ? "Hide evidence" : "Show evidence"}{open ? <ChevronDown /> : <ChevronRight />}</Button></td><td><div className="decision-actions"><Button size="sm" variant={decision?.decision === "approve" ? "default" : "outline"} aria-pressed={decision?.decision === "approve"} onClick={() => approve(row)}><Check />Approve</Button><Button size="sm" variant={decision?.decision === "exclude" ? "default" : "outline"} aria-pressed={decision?.decision === "exclude"} onClick={() => decide(row.reviewer.id, "exclude")}><X />Exclude</Button></div><p className="decision-label">{decision ? decision.decision === "approve" ? "Approved" : "Excluded" : "Not decided"}</p>{decision?.reason && <p className="decision-reason">{decision.reason}</p>}</td></tr>{open && <tr className="evidence-row"><td colSpan={5}><Evidence row={row} onNameMatch={choice => nameMatch(row.reviewer.id, choice)} /></td></tr>}</Fragment>;
+    })}{!visible.length && <tr><td colSpan={5} className="results-empty">No reviewers with this result.</td></tr>}</tbody></table></div>
+    <Dialog open={Boolean(approving)} onOpenChange={open => { if (!open) { setApproving(undefined); setDecisionError(""); } }}><DialogContent className="approval-dialog"><DialogHeader><DialogTitle>Approve {approving?.reviewer.name}</DialogTitle><DialogDescription>You're approving a reviewer with a flagged possible conflict.</DialogDescription></DialogHeader><form onSubmit={event => { event.preventDefault(); if (approving) decide(approving.reviewer.id, "approve", decisionReason); }}><label htmlFor="decision-reason">Reason (at least 10 characters)</label><Textarea id="decision-reason" value={decisionReason} onChange={event => setDecisionReason(event.target.value)} maxLength={2000} aria-invalid={Boolean(decisionError)} aria-describedby={decisionError ? "decision-error" : undefined} autoFocus />{decisionError && <p id="decision-error" className="field-error" role="alert">{decisionError}</p>}<DialogFooter><Button type="button" variant="outline" onClick={() => setApproving(undefined)}>Cancel</Button><Button type="submit" disabled={decisionReason.trim().length < 10}><Check />Approve reviewer</Button></DialogFooter></form></DialogContent></Dialog>
     <p className="results-footer-note">Results are based on public publication data and the candidate's declarations. The tool flags; the chair decides.</p>
   </>;
 }

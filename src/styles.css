@@ -334,3 +334,27 @@
   .summary-band { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
   .quick-start { margin-top: 40px; }
 }
+
+.candidate-declarations { border: 1px solid var(--border); border-radius: 4px; padding: 18px; margin-bottom: 28px; scroll-margin-top: 20px; }
+.candidate-declarations:target { outline: 2px solid var(--ring); outline-offset: 3px; }
+.candidate-declarations h2 { font-size: 18px; font-weight: 500; margin: 0 0 14px; }
+.candidate-declarations dl { margin: 0; font-size: 14px; line-height: 1.7; }
+.candidate-declarations dl div { display: flex; flex-wrap: wrap; gap: 0 6px; margin: 6px 0; }
+.candidate-declarations dt { font-weight: 500; }
+.candidate-declarations dd { margin: 0; }
+.candidate-declarations p { color: var(--muted-foreground); font-size: 13px; margin: 14px 0 0; }
+.decision-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.decision-toolbar > span { font-weight: 500; }
+.results-table { min-width: 900px; }
+.results-table th:first-child { width: 23%; }
+.results-table th:nth-child(2) { width: 17%; }
+.results-table th:nth-child(3) { width: 25%; }
+.results-table th:nth-child(4) { width: 15%; }
+.results-table th:last-child { width: 20%; }
+.decision-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.decision-label { margin: 10px 0 0; font-size: 13px; font-weight: 500; }
+.decision-reason { margin: 5px 0 0; color: var(--muted-foreground); font-size: 12px; }
+.declaration-link { display: flex; white-space: normal; height: auto; text-align: left; padding: 0; margin-top: 8px; font-size: 12px; }
+.approval-dialog { width: calc(100% - 32px); max-width: 460px; }
+.approval-dialog label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; }
+.approval-dialog form > div:last-child { margin-top: 18px; gap: 8px; }

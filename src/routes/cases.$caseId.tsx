@@ -23,6 +23,7 @@ function CaseDetail() {
   const [caseRecord, setCaseRecord] = useState<CaseRecord>();
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { setCaseRecord(getCase(caseId)); setLoaded(true); }, [caseId]);
+  useEffect(() => { if (caseRecord && window.location.hash === "#candidate-declarations") document.getElementById("candidate-declarations")?.scrollIntoView(); }, [caseRecord]);
   if (!loaded) return <p role="status">Loading case…</p>;
   if (!caseRecord) return <><PageHeading title="Case unavailable" /><Link to="/cases" className="text-primary">Back to cases</Link></>;
   return <><header className="case-header"><h1>{caseRecord.title}</h1><p>{caseRecord.subtitle}</p></header>

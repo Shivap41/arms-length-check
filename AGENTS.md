@@ -38,3 +38,6 @@ use the editor.
 - Keep fictional scenario fixtures in demoScenario.ts and expose cloned profiles and choice-driven outcomes only through screeningService.ts; loading replaces the demo roster and never performs identifier lookups.
 - Keep identity-step views free of conflict outcomes, derive progress from actual choices, and route every choice/undo through confirmIdentity; finalize the same screening snapshot only after all rows are handled.
 - Derive results counts, sorting, reasons, and evidence from the current screening snapshot through service helpers; name-only paper decisions update only that evidence match, while identity changes reset its outcome.
+
+- Record chair decisions and audit snapshots through screeningService in browser memory; invalidate decisions when identity or evidence changes so exports never contain stale approvals.
+- Generate audit downloads as escaped standalone HTML from the service snapshot, keeping exports usable offline without server dependencies.

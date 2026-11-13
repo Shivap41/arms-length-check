@@ -23,3 +23,7 @@
 - [x] Add sorted, filterable results and expandable evidence.
 - [x] Add name-only match decisions and targeted identity changes.
 - [x] Verify counts, evidence, and updated outcomes through the full screening flow.
+# Declarations, chair decisions, audit record
+- [x] Add candidate declarations and a results backlink.
+- [x] Add validated chair decisions, reasons, and decided progress.
+- [x] Add gated printable HTML audit download and verify the full flow.
