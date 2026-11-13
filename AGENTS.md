@@ -28,3 +28,8 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application structure
+- Keep the frontend-only prototype shell in a shared component mounted around the root Outlet so navigation stays consistent across pages.
+- Use a cases layout with an Outlet and separate index/detail leaves so both list and dynamic case URLs render correctly.
+- Keep all visual tokens and shell styles in src/styles.css and use design-system controls for actions so the reference styling stays consistent.
