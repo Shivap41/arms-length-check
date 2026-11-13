@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveSession } from "@/lib/research-session";
 import { checkDataConnection as checkConnection } from "@/lib/data-connection.functions";
 import { identifyPerson, resolveProfileLink } from "@/lib/identity.functions";
+import { checkReviewer } from "@/lib/check.functions";
 import { isValidOrcid, NO_INDEXED_WORKS, type IdentifyResult, type ResolveResult } from "@/lib/identity";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
@@ -472,7 +473,12 @@ export async function addLiveDeclaration(caseId: string, input: LiveDeclarationI
 }
 // Live identity step (B3). Identification runs only in server functions; this service saves
 // the chair's choices. Nothing without an ORCID is confirmed automatically (v1).
-export type LiveScreeningName = { id: string; reviewerId: string; identity: LiveIdentity; checkStatus: string; result: string | null };
+export type LiveCheckStatus = "not_started" | "running" | "done" | "failed";
+export type LiveCheckStage = "publications" | "institutions" | "declarations" | "done" | null;
+export type LiveResult = "conflict" | "potential" | "insufficient" | "no_conflict";
+export type LiveCheckNotes = { durationMs?: number; calls?: { fresh: number; cached: number }; nameScan?: { covered: number; total: number }; sharedWorks?: number };
+export type LiveScreeningName = { id: string; reviewerId: string; identity: LiveIdentity; checkStatus: LiveCheckStatus; checkStage: LiveCheckStage; result: LiveResult | null; reason: string; error: string; checkStartedAt: string | null; notes: LiveCheckNotes };
+export type LiveFinding = { id: string; screeningNameId: string; rule: string; severity: "conflict" | "potential" | "info"; evidence: Record<string, unknown> };
 export type LiveScreening = { id: string; names: LiveScreeningName[] };
 export type LiveIdentityChoice =
   | { kind: "orcid"; profileId: string }
@@ -508,10 +514,19 @@ export async function saveLiveCandidateIdentity(caseId: string, choice: LiveIden
   const columns = identityColumns(choice);
   const { data, error } = await supabase.from("cases").update({ candidate_identity_status: columns.status, candidate_identity_method: columns.method, candidate_profile_ids: columns.profileIds, candidate_identity_reason: columns.reason, candidate_confirmed_by: await actorLabel(choice), candidate_confirmed_at: new Date().toISOString() }).eq("id", caseId).select().single();
   if (error || !data) throw new Error("Couldn't save the candidate's identity. Try again.");
+  // Every reviewer check depends on the candidate: a new candidate identity resets them.
+  const screenings = await supabase.from("screenings").select("id").eq("case_id", caseId);
+  const screeningIds = (screenings.data ?? []).map(row => row.id);
+  if (screeningIds.length) {
+    const names = await supabase.from("screening_names").update({ check_status: "not_started", check_stage: null, result: null, error: null, check_started_at: null, check_finished_at: null, check_notes: {} }).in("screening_id", screeningIds).eq("identity_status", "confirmed").select("id");
+    const ids = (names.data ?? []).map(row => row.id);
+    if (ids.length) await supabase.from("findings").delete().in("screening_name_id", ids);
+  }
   return mapLiveCase(data);
 }
-function mapScreeningName(row: { id: string; reviewer_id: string; identity_status: string; identity_method: string | null; profile_ids: string[]; confirmed_by: string | null; confirmed_at: string | null; reason: string | null; check_status: string; result: string | null }): LiveScreeningName {
-  return { id: row.id, reviewerId: row.reviewer_id, checkStatus: row.check_status, result: row.result, identity: { status: row.identity_status as LiveIdentityStatus, method: row.identity_method as LiveIdentityMethod | null, profileIds: row.profile_ids ?? [], confirmedBy: row.confirmed_by ?? "", confirmedAt: row.confirmed_at, reason: row.reason ?? "" } };
+type ScreeningNameRow = { id: string; reviewer_id: string; identity_status: string; identity_method: string | null; profile_ids: string[]; confirmed_by: string | null; confirmed_at: string | null; reason: string | null; check_status: string; check_stage: string | null; result: string | null; error: string | null; check_started_at: string | null; check_notes: unknown };
+function mapScreeningName(row: ScreeningNameRow): LiveScreeningName {
+  return { id: row.id, reviewerId: row.reviewer_id, checkStatus: row.check_status as LiveCheckStatus, checkStage: row.check_stage as LiveCheckStage, result: row.result as LiveResult | null, reason: row.reason ?? "", error: row.error ?? "", checkStartedAt: row.check_started_at, notes: (row.check_notes ?? {}) as LiveCheckNotes, identity: { status: row.identity_status as LiveIdentityStatus, method: row.identity_method as LiveIdentityMethod | null, profileIds: row.profile_ids ?? [], confirmedBy: row.confirmed_by ?? "", confirmedAt: row.confirmed_at, reason: row.reason ?? "" } };
 }
 /** The case's current screening, with one identity row per proposed reviewer (created on first open). */
 export async function getLiveScreening(caseId: string): Promise<LiveScreening> {
@@ -537,8 +552,10 @@ export async function getLiveScreening(caseId: string): Promise<LiveScreening> {
 export async function saveLiveReviewerIdentity(nameId: string, choice: LiveIdentityChoice): Promise<LiveScreeningName> {
   identifier.parse(nameId);
   const columns = identityColumns(choice);
-  const { data, error } = await supabase.from("screening_names").update({ identity_status: columns.status, identity_method: columns.method, profile_ids: columns.profileIds, reason: columns.reason, result: columns.result, confirmed_by: await actorLabel(choice), confirmed_at: new Date().toISOString() }).eq("id", nameId).select().single();
+  // A new identity invalidates any earlier check and its findings.
+  const { data, error } = await supabase.from("screening_names").update({ identity_status: columns.status, identity_method: columns.method, profile_ids: columns.profileIds, reason: columns.reason, result: columns.result, confirmed_by: await actorLabel(choice), confirmed_at: new Date().toISOString(), check_status: "not_started", check_stage: null, error: null, check_started_at: null, check_finished_at: null, check_notes: {} }).eq("id", nameId).select().single();
   if (error || !data) throw new Error("Couldn't save this identity. Try again.");
+  await supabase.from("findings").delete().eq("screening_name_id", nameId);
   return mapScreeningName(data);
 }
 /** Runs the server-side identify step. Throws only when the server can't be reached at all. */
@@ -548,3 +565,30 @@ export async function identifyLive(input: { typedName: string; typedInstitution:
 export async function resolveLiveLink(link: string): Promise<ResolveResult> {
   return resolveProfileLink({ data: { link } });
 }
+
+// Live checks (B4). Each check runs in the checkReviewer server function, which writes its
+// stage to the row; the page polls these rows. An error never becomes a result.
+export const LIVE_CHECK_STALE_MS = 120_000;
+export async function startLiveCheck(nameId: string): Promise<{ status: "done"; result: string } | { status: "failed"; error: string }> {
+  identifier.parse(nameId);
+  return checkReviewer({ data: { screeningNameId: nameId } });
+}
+export async function listLiveScreeningNames(screeningId: string): Promise<LiveScreeningName[]> {
+  identifier.parse(screeningId);
+  const { data, error } = await supabase.from("screening_names").select("*").eq("screening_id", screeningId);
+  if (error) throw new Error("Couldn't load check progress.");
+  return data.map(mapScreeningName);
+}
+export async function listLiveFindings(nameIds: string[]): Promise<LiveFinding[]> {
+  if (!nameIds.length) return [];
+  const { data, error } = await supabase.from("findings").select("*").in("screening_name_id", z.array(identifier).max(200).parse(nameIds));
+  if (error) throw new Error("Couldn't load findings.");
+  return data.map(row => ({ id: row.id, screeningNameId: row.screening_name_id, rule: row.rule, severity: row.severity as LiveFinding["severity"], evidence: (row.evidence ?? {}) as Record<string, unknown> }));
+}
+/** Should this row's check be (re)started now? Confirmed and never run, or stuck "running" from a closed page. */
+export function needsCheckStart(row: LiveScreeningName, now = Date.now()): boolean {
+  if (row.identity.status !== "confirmed") return false;
+  if (row.checkStatus === "not_started") return true;
+  return row.checkStatus === "running" && (!row.checkStartedAt || now - Date.parse(row.checkStartedAt) > LIVE_CHECK_STALE_MS);
+}
+export const liveResultLabels: Record<LiveResult, string> = { conflict: "Conflict", potential: "Potential", insufficient: "Insufficient data", no_conflict: "No conflict found" };

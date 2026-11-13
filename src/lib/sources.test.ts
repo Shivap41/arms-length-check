@@ -101,7 +101,7 @@ describe("source request rules", () => {
     expect(first.searchParams.get("cursor")).toBe("*");
     expect(first.searchParams.get("filter")).toBe("authorships.author.id:A1,from_publication_date:2020-01-01");
     expect(first.searchParams.get("per-page")).toBe("200");
-    expect(first.searchParams.get("select")).toBe("id,doi,title,publication_year,type,authorships");
+    expect(first.searchParams.get("select")).toBe("id,doi,title,publication_year,type,authorships,primary_location");
     expect((await s.sources.getWorksByAuthor("A1", { fromDate: "2020-01-01" })).fromCache).toBe(true);
     expect(fetcher).toHaveBeenCalledTimes(5);
   });

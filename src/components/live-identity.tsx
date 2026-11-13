@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronDown, RotateCw } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, RotateCw } from "lucide-react";
+import { LiveResults, LiveProgress } from "@/components/live-results";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { parseProfileLink, SEARCH_FAILED_MESSAGE, type IdentifyResult, type LiveProfile } from "@/lib/identity";
 import {
-  canStartLiveChecks, getLiveScreening, identifyLive, resolveLiveLink, saveLiveCandidateIdentity, saveLiveReviewerIdentity, shouldAutoApply,
-  type LiveCase, type LiveIdentity, type LiveIdentityChoice, type LiveScreening, type Reviewer,
+  canStartLiveChecks, getLiveScreening, identifyLive, listLiveScreeningNames, liveResultLabels, needsCheckStart, resolveLiveLink, saveLiveCandidateIdentity, saveLiveReviewerIdentity, shouldAutoApply, startLiveCheck,
+  type LiveCase, type LiveIdentity, type LiveIdentityChoice, type LiveScreening, type LiveScreeningName, type Reviewer,
 } from "@/data/screeningService";
 
 export type Lookup = { state: "loading" } | { state: "done"; result: IdentifyResult } | { state: "unreachable" };
@@ -43,6 +44,15 @@ export function IdentityOptions({ lookup, onPick, onRetry, disabledIds = [] }: {
   </Button>)}</div>;
 }
 
+const stageLabels: Record<string, string> = { publications: "Publications", institutions: "Institutions", declarations: "Declarations", done: "Done" };
+/** The check's live state on a confirmed reviewer row (D53: checks start on confirmation). */
+export function CheckLine({ row, localError, onRetry }: { row: LiveScreeningName; localError?: string | undefined; onRetry: () => void }) {
+  if (row.identity.status !== "confirmed") return null;
+  if (localError || row.checkStatus === "failed") return <p className="check-status check-failed" role="alert"><AlertTriangle aria-hidden="true" />{localError || row.error || "Couldn't check"}<Button size="sm" variant="outline" onClick={onRetry}><RotateCw />Retry</Button></p>;
+  if (row.checkStatus === "done" && row.result) return <p className="check-status check-done"><Check aria-hidden="true" />Checked: {liveResultLabels[row.result]}</p>;
+  return <p className="check-status check-running" role="status"><Loader2 className="check-spinner" aria-hidden="true" />Checking… {stageLabels[row.checkStage ?? "publications"]}</p>;
+}
+
 const chip: Record<string, { label: string; className: string }> = {
   needs_chair: { label: "Needs you", className: "identity-chip-needs-you" },
   orcid: { label: "Confirmed · ORCID", className: "identity-chip-orcid" },
@@ -57,9 +67,9 @@ function chipFor(identity: LiveIdentity) {
 type RowProps = {
   label: string; name: string; institution: string; orcid: string; identity: LiveIdentity; lookup: Lookup | undefined;
   profiles: Record<string, LiveProfile>; open: boolean; onToggle: () => void;
-  onChoose: (choice: LiveIdentityChoice, profiles: LiveProfile[]) => Promise<void>; onRetry: () => void;
+  onChoose: (choice: LiveIdentityChoice, profiles: LiveProfile[]) => Promise<void>; onRetry: () => void; check?: React.ReactNode;
 };
-function IdentityRow({ label, name, institution, orcid, identity, lookup, profiles, open, onToggle, onChoose, onRetry }: RowProps) {
+function IdentityRow({ label, name, institution, orcid, identity, lookup, profiles, open, onToggle, onChoose, onRetry, check }: RowProps) {
   const [merge, setMerge] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
   const [paste, setPaste] = useState("");
@@ -97,6 +107,7 @@ function IdentityRow({ label, name, institution, orcid, identity, lookup, profil
   }
   return <section className={`identity-row ${open ? "identity-row-open" : ""}`} aria-label={`${label}: ${name}`}>
     <div className="identity-row-heading"><Button variant="ghost" className="identity-row-toggle" aria-expanded={open} onClick={() => { onToggle(); reset(); }}><span>{name}<span className="identity-typed-institution">{institution}{orcid ? ` · ${orcid}` : ""}</span></span><ChevronDown /></Button><span className={`identity-chip ${status.className}`}>{identity.status === "confirmed" && identity.method === "orcid" && <Check />}{status.label}</span></div>
+    {check}
     {identity.status !== "needs_chair" && <div className="identity-summary">
       <span>{identity.status === "cant_tell" ? identity.reason : confirmedProfiles.length ? confirmedProfiles.map(profile => `${profile.displayName}, ${profile.currentInstitutions[0] ?? "no current institution"} (${profile.id})`).join(" + ") : identity.profileIds.join(" + ")}</span>
       <Button variant="link" className="identity-change" onClick={() => void save({ kind: "reset" }, [])} disabled={busy}>Change</Button>
@@ -129,6 +140,10 @@ export function LiveIdentityStep({ caseRecord, reviewers, onCaseChange }: { case
   const [profiles, setProfiles] = useState<Record<string, LiveProfile>>({});
   const [openKey, setOpenKey] = useState<string>();
   const started = useRef(new Set<string>());
+  const inflight = useRef(new Set<string>());
+  const [inflightCount, setInflightCount] = useState(0);
+  const [checkErrors, setCheckErrors] = useState<Record<string, string>>({});
+  const [view, setView] = useState<"identity" | "results">("identity");
   const candidateConfirmed = canStartLiveChecks(caseRecord);
   const remember = useCallback((list: LiveProfile[]) => setProfiles(previous => ({ ...previous, ...Object.fromEntries(list.map(profile => [profile.id, profile])) })), []);
 
@@ -153,6 +168,37 @@ export function LiveIdentityStep({ caseRecord, reviewers, onCaseChange }: { case
     const updated = await saveLiveReviewerIdentity(nameId, choice);
     setScreening(previous => previous ? { ...previous, names: previous.names.map(row => row.id === nameId ? updated : row) } : previous);
   }, [remember]);
+
+  const refreshNames = useCallback(async (screeningId: string) => {
+    try { const names = await listLiveScreeningNames(screeningId); setScreening(previous => previous && previous.id === screeningId ? { ...previous, names } : previous); } catch { /* keep the last known state */ }
+  }, []);
+  // D53: a reviewer's check starts the moment they're confirmed.
+  const startCheck = useCallback((screeningId: string, nameId: string) => {
+    if (inflight.current.has(nameId)) return;
+    inflight.current.add(nameId); setInflightCount(inflight.current.size);
+    setCheckErrors(previous => { const next = { ...previous }; delete next[nameId]; return next; });
+    setScreening(previous => previous ? { ...previous, names: previous.names.map(row => row.id === nameId ? { ...row, checkStatus: "running", checkStage: "publications", result: null, error: "" } : row) } : previous);
+    startLiveCheck(nameId)
+      .catch(() => { setCheckErrors(previous => ({ ...previous, [nameId]: "Couldn't check: the server didn't respond" })); })
+      .finally(() => { inflight.current.delete(nameId); setInflightCount(inflight.current.size); void refreshNames(screeningId); });
+  }, [refreshNames]);
+  const autoStarted = useRef(new Set<string>());
+  useEffect(() => {
+    if (!screening) return;
+    for (const row of screening.names) {
+      const key = `${row.id}:${row.identity.confirmedAt ?? ""}`;
+      if (autoStarted.current.has(key) || !needsCheckStart(row)) continue;
+      autoStarted.current.add(key);
+      startCheck(screening.id, row.id);
+    }
+  }, [screening, startCheck]);
+  // Poll stages while anything is running.
+  const anyRunning = Boolean(screening?.names.some(row => row.identity.status === "confirmed" && row.checkStatus === "running")) || inflightCount > 0;
+  useEffect(() => {
+    if (!screening || !anyRunning) return;
+    const timer = window.setInterval(() => void refreshNames(screening.id), 1000);
+    return () => window.clearInterval(timer);
+  }, [screening?.id, anyRunning, refreshNames]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Candidate first.
   const candidateInput = { typedName: caseRecord.candidateName, typedInstitution: caseRecord.candidateInstitution, typedOrcid: caseRecord.candidateOrcid || null };
@@ -197,6 +243,14 @@ export function LiveIdentityStep({ caseRecord, reviewers, onCaseChange }: { case
   const retry = (key: string, input: Parameters<typeof runLookup>[1], identity: LiveIdentity, apply: Parameters<typeof runLookup>[3]) => () => void runLookup(key, input, identity, apply);
   const rows = (screening?.names ?? []).map(row => ({ row, reviewer: reviewers.find(item => item.id === row.reviewerId) })).filter((entry): entry is { row: typeof entry.row; reviewer: Reviewer } => Boolean(entry.reviewer));
   const needsYou = rows.filter(entry => entry.row.identity.status === "needs_chair").length;
+  const stillChecking = rows.some(entry => entry.row.identity.status === "confirmed" && (entry.row.checkStatus === "running" || entry.row.checkStatus === "not_started") && !checkErrors[entry.row.id]);
+
+  if (view === "results" && screening) {
+    return <section className="live-identity" aria-labelledby="live-results-title">
+      {stillChecking ? <LiveProgress rows={rows} errors={checkErrors} /> : <LiveResults rows={rows} errors={checkErrors} onRetry={nameId => startCheck(screening.id, nameId)} />}
+      <div className="identity-footer"><Button variant="link" className="back-link" onClick={() => setView("identity")}>Back to confirming identities</Button></div>
+    </section>;
+  }
 
   return <section className="live-identity" aria-labelledby="live-identity-title">
     <h2 id="live-identity-title">Step 1: Confirm who each person is</h2>
@@ -210,7 +264,8 @@ export function LiveIdentityStep({ caseRecord, reviewers, onCaseChange }: { case
     : !rows.length ? <p className="field-help">Add reviewers above, then confirm who each one is here.</p>
     : <>
       <p className="identity-progress" role="status">{rows.length - needsYou} of {rows.length} handled{needsYou ? ` · ${needsYou} need you` : ""}</p>
-      <div className="identity-list">{rows.map(({ row, reviewer }) => <IdentityRow key={row.id} label="Reviewer" name={reviewer.name} institution={reviewer.institution} orcid={reviewer.identity} identity={row.identity} lookup={lookups[row.id]} profiles={profiles} open={openKey === row.id || (row.identity.status === "needs_chair" && openKey === undefined)} onToggle={() => setOpenKey(openKey === row.id ? "" : row.id)} onChoose={saveReviewer(row.id)} onRetry={retry(row.id, { typedName: reviewer.name, typedInstitution: reviewer.institution, typedOrcid: reviewer.identity || null }, row.identity, saveReviewer(row.id))} />)}</div>
+      <div className="identity-list">{rows.map(({ row, reviewer }) => <IdentityRow key={row.id} label="Reviewer" name={reviewer.name} institution={reviewer.institution} orcid={reviewer.identity} identity={row.identity} lookup={lookups[row.id]} profiles={profiles} open={openKey === row.id || (row.identity.status === "needs_chair" && openKey === undefined)} onToggle={() => setOpenKey(openKey === row.id ? "" : row.id)} onChoose={saveReviewer(row.id)} onRetry={retry(row.id, { typedName: reviewer.name, typedInstitution: reviewer.institution, typedOrcid: reviewer.identity || null }, row.identity, saveReviewer(row.id))} check={<CheckLine row={row} localError={checkErrors[row.id]} onRetry={() => screening && startCheck(screening.id, row.id)} />} />)}</div>
+      {needsYou === 0 && <div className="identity-footer"><span /><Button onClick={() => setView("results")}>See results<ChevronRight /></Button></div>}
     </>}
   </section>;
 }

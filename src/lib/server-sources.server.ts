@@ -18,6 +18,6 @@ async function apiCache(): Promise<SourceCache> {
 }
 
 /** One sources client per screening (or per user task); the key is injected here and never leaves the server. */
-export async function serverSources(screeningId: string) {
-  return createSources({ apiKey: process.env["OPENALEX_API_KEY"], screeningId, cache: await apiCache() });
+export async function serverSources(screeningId: string, onResult?: (fromCache: boolean) => void) {
+  return createSources({ apiKey: process.env["OPENALEX_API_KEY"], screeningId, cache: await apiCache(), ...(onResult ? { onResult } : {}) });
 }

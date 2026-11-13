@@ -288,6 +288,9 @@ export type Database = {
       screening_names: {
         Row: {
           check_stage: string | null
+          check_started_at: string | null
+          check_finished_at: string | null
+          check_notes: Json
           check_status: string
           confirmed_at: string | null
           confirmed_by: string | null
@@ -303,6 +306,9 @@ export type Database = {
         }
         Insert: {
           check_stage?: string | null
+          check_started_at?: string | null
+          check_finished_at?: string | null
+          check_notes?: Json
           check_status?: string
           confirmed_at?: string | null
           confirmed_by?: string | null
@@ -318,6 +324,9 @@ export type Database = {
         }
         Update: {
           check_stage?: string | null
+          check_started_at?: string | null
+          check_finished_at?: string | null
+          check_notes?: Json
           check_status?: string
           confirmed_at?: string | null
           confirmed_by?: string | null

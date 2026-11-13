@@ -36,7 +36,7 @@ const employmentSchema = z.object({ "affiliation-group": z.array(z.object({
     "start-date": dateSchema, "end-date": dateSchema,
   }).passthrough() }).passthrough()),
 }).passthrough()).nullable().transform(groups => groups ?? []) }).passthrough();
-const worksPageSchema = z.object({ results: z.array(workSchema), meta: z.object({ next_cursor: z.string().nullable().optional() }).passthrough() });
+const worksPageSchema = z.object({ results: z.array(workSchema), meta: z.object({ next_cursor: z.string().nullable().optional(), count: z.number().optional() }).passthrough() });
 const recentWorksSchema = z.object({ results: z.array(z.object({ id: z.string(), doi: z.string().nullable(), title: z.string().nullable(), publication_year: z.number().nullable() }).passthrough()) }).passthrough();
 const authorSearchSchema = z.object({ results: z.array(authorSchema) }).passthrough();
 // Ephemeral scheduling only; durable responses always live in api_cache.
@@ -68,6 +68,8 @@ function statusError(status: number): SourceError {
 export function createSources(options: {
   apiKey: string | undefined; cache: SourceCache; screeningId: string;
   fetch?: typeof fetch; now?: () => number; sleep?: (ms: number) => Promise<void>;
+  /** Called once per request with whether it was served from api_cache (for call counts). */
+  onResult?: (fromCache: boolean) => void;
 }) {
   const fetcher = options.fetch ?? fetch;
   const now = options.now ?? Date.now;
@@ -87,6 +89,7 @@ export function createSources(options: {
         if (age >= 0 && age < CACHE_TTL_MS) {
           const parsed = schema.safeParse(cached.body);
           if (!parsed.success) throw new SourceError("Upstream");
+          options.onResult?.(true);
           return { data: parsed.data, fromCache: true };
         }
       }
@@ -111,6 +114,7 @@ export function createSources(options: {
             const parsed = schema.safeParse(body);
             if (!parsed.success) throw new SourceError("Upstream");
             await options.cache.write(key, body, new Date(now()).toISOString());
+            options.onResult?.(false);
             return { data: parsed.data, fromCache: false };
           }
         } catch (error) {
@@ -125,7 +129,7 @@ export function createSources(options: {
     pending.set(pendingKey, promise);
     try { return await promise; } finally { pending.delete(pendingKey); }
   }
-  const worksParams = { "per-page": "200", select: "id,doi,title,publication_year,type,authorships" };
+  const worksParams = { "per-page": "200", select: "id,doi,title,publication_year,type,authorships,primary_location" };
   return {
     getAuthorByOrcid: (orcid: string) => request("openalex", `/authors/orcid:${orcidId(orcid)}`, {}, authorSchema),
     searchAuthors: async (name: string) => {
@@ -142,18 +146,20 @@ export function createSources(options: {
       }));
       return { data, fromCache: result.fromCache };
     },
-    getWorksByAuthor: async (id: string, { fromDate }: { fromDate?: string } = {}): Promise<CachedResponse<Work[]>> => {
+    getWorksByAuthor: async (id: string, { fromDate }: { fromDate?: string } = {}): Promise<CachedResponse<Work[]> & { total: number }> => {
       let filter = `authorships.author.id:${entityId(id, "A")}`;
       if (fromDate) filter += `,from_publication_date:${z.string().date().parse(fromDate)}`;
       let cursor: string | null = "*";
       const data: Work[] = [];
       let fromCache = true;
+      let total = 0;
       for (let page = 0; page < 5 && cursor; page++) {
         const result: CachedResponse<z.infer<typeof worksPageSchema>> = await request("openalex", "/works", { ...worksParams, filter, cursor }, worksPageSchema);
         data.push(...result.data.results); fromCache &&= result.fromCache;
+        if (page === 0) total = result.data.meta.count ?? 0;
         cursor = result.data.meta.next_cursor ?? null;
       }
-      return { data, fromCache };
+      return { data, fromCache, total: Math.max(total, data.length) };
     },
     /** The n most recent works for a profile card (title, year, DOI). */
     getRecentWorks: async (id: string, n = 3): Promise<CachedResponse<{ title: string; year: number | null; doi: string | null }[]>> => {

@@ -43,6 +43,13 @@
       "when": 1794610000000,
       "tag": "0005_candidate_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794620000000,
+      "tag": "0006_check_tracking",
+      "breakpoints": true
     }
   ]
 }

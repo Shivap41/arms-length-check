@@ -459,3 +459,32 @@
 .profile-match { display: block; margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
 .identity-resolved { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; }
 .identity-progress { font-size: 14px; color: var(--muted-foreground); }
+
+/* Live checks and results (B4) */
+.live-progress-list { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 10px; }
+.live-progress-list li { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+.live-progress-name { min-width: 180px; font-weight: 500; }
+.live-progress-stages { display: flex; gap: 6px; }
+.live-progress-stages span { padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted-foreground); font-size: 12px; }
+.live-progress-stages .stage-done { background: var(--muted); color: var(--foreground); }
+.live-progress-stages .stage-current { border-color: var(--primary); color: var(--primary); }
+.live-results { display: grid; gap: 12px; margin-top: 12px; }
+.live-result { border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; }
+.live-result-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.live-result-reason { margin: 6px 0; font-size: 14px; color: var(--muted-foreground); }
+.result-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.result-chip svg { width: 14px; height: 14px; }
+.result-conflict { background: #FDE8E8; color: #9B1C1C; }
+.result-potential { background: #FEF3C7; color: #92400E; }
+.result-insufficient, .result-none { background: var(--muted); color: var(--foreground); }
+.result-no_conflict { background: #DEF7EC; color: #03543F; }
+.result-failed { background: #FDE8E8; color: #9B1C1C; }
+.evidence-finding { margin-top: 12px; }
+.evidence-finding h4 { margin: 0 0 6px; font-size: 14px; font-weight: 500; }
+.evidence-rule { margin-left: 6px; font-weight: 400; font-size: 12px; color: var(--muted-foreground); }
+.evidence-works { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.evidence-works li { display: flex; gap: 10px; }
+.evidence-works a { color: var(--primary); }
+.evidence-works a svg { display: inline; width: 12px; height: 12px; margin-left: 4px; }
+.evidence-year { min-width: 40px; color: var(--muted-foreground); }
+.evidence-meta { display: block; font-size: 12px; color: var(--muted-foreground); }
