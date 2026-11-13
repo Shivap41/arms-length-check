@@ -3,7 +3,7 @@
 @source "../src";
 
 @theme inline {
-  --font-sans: "Roboto", Arial, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 4px;
@@ -499,3 +499,41 @@
 .admin-load textarea { width: 100%; font-family: monospace; font-size: 12px; }
 .admin-actions { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
 .admin-misses { font-size: 14px; display: grid; gap: 4px; }
+
+
+/* D59 public showcase: neutral theme (graphite + muted green), not modelled on any vendor's product. */
+:root {
+  --primary: oklch(0.47 0.07 165);
+  --primary-hover: oklch(0.41 0.07 165);
+  --ring: oklch(0.47 0.07 165);
+  --header: oklch(0.99 0 0);
+  --header-foreground: oklch(0.25 0.01 250);
+  --header-hover: oklch(0.95 0 0);
+  --sidebar: oklch(0.975 0.003 165);
+  --profile-strip: oklch(0.47 0.07 165);
+}
+.alc-app { min-height: 100vh; display: flex; flex-direction: column; background: var(--background); }
+.alc-header { display: flex; align-items: center; gap: 28px; padding: 14px 28px; border-bottom: 1px solid var(--border); background: var(--header); color: var(--header-foreground); flex-wrap: wrap; }
+.alc-brand { display: flex; align-items: center; gap: 10px; color: var(--header-foreground); font-size: 20px; font-weight: 600; }
+.alc-mark { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: var(--primary); color: var(--primary-foreground); font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+.alc-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+.alc-nav-link { padding: 6px 12px; border-radius: 6px; color: var(--foreground); font-size: 14px; }
+.alc-nav-link:hover { background: var(--header-hover); }
+.alc-nav-active { background: var(--sidebar); color: var(--primary); font-weight: 600; }
+.alc-banner { margin: 0; padding: 8px 28px; background: oklch(0.97 0.02 85); border-bottom: 1px solid oklch(0.9 0.04 85); font-size: 13px; color: oklch(0.35 0.03 85); }
+.alc-banner a, .alc-footer a { color: var(--primary); text-decoration: underline; }
+.alc-main { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 24px 28px 48px; box-sizing: border-box; }
+.alc-footer { padding: 16px 28px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted-foreground); }
+.showcase-entries { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 20px; }
+.showcase-entry { display: flex; flex-direction: column; gap: 10px; padding: 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--foreground); }
+.showcase-entry:hover { border-color: var(--primary); }
+.showcase-entry h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.showcase-entry p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted-foreground); }
+.showcase-entry .showcase-tag { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: var(--sidebar); color: var(--primary); font-size: 12px; font-weight: 600; }
+.showcase-intro { max-width: 760px; line-height: 1.6; color: var(--muted-foreground); }
+.showcase-reviewers { margin: 12px 0 20px; padding-left: 20px; font-size: 14px; line-height: 1.7; }
+.showcase-form { display: grid; gap: 12px; max-width: 720px; }
+.showcase-form textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 13px; }
+.identity-hint { margin: 0 0 8px; font-size: 13px; color: var(--primary); }
+.check-provenance { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
+@media (max-width: 640px) { .alc-header, .alc-banner, .alc-footer { padding-left: 16px; padding-right: 16px; } .alc-main { padding: 16px; } }

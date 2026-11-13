@@ -65,6 +65,7 @@ export const failureMessages: Record<SourceError["type"], string> = {
   BudgetOrAuth: "Couldn't check: the data source refused the request (API key or daily budget)",
   NotFound: "Couldn't check: a confirmed profile could not be found",
   Upstream: "Couldn't check: the data source didn't respond as expected",
+  QuotaReached: "Live quota reached for today - showing cached results",
 };
 
 /** Byline institutions on the person's own authorships in works from the last N years. */

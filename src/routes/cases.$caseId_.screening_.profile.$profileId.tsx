@@ -5,8 +5,8 @@ import { getIdentityReviews, getScreening, type IdentityProfile } from "@/data/s
 export const Route = createFileRoute("/cases/$caseId_/screening_/profile/$profileId")({
   validateSearch: z.object({ screeningId: z.string().max(150).optional() }),
   head: () => ({ meta: [
-    { title: "Reviewer profile | Faculty Review" }, { name: "description", content: "Fictional reviewer identity profile and recent publications." },
-    { property: "og:title", content: "Reviewer profile | Faculty Review" }, { property: "og:description", content: "Fictional reviewer identity profile and recent publications." },
+    { title: "Reviewer profile | Arm's Length Check" }, { name: "description", content: "Fictional reviewer identity profile and recent publications." },
+    { property: "og:title", content: "Reviewer profile | Arm's Length Check" }, { property: "og:description", content: "Fictional reviewer identity profile and recent publications." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }), component: Profile,
 });

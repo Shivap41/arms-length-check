@@ -1,74 +1,27 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Mail, Search, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import { getActiveSession, logResearchEvent, SESSION_CHANGE_EVENT, type ActiveSession } from "@/lib/research-session";
-import { onCheckEvent } from "@/data/screeningService";
-import { supabase } from "@/integrations/supabase/client";
-import { AUTH_CHANGE_EVENT } from "@/routes/__root";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { ABOUT_URL, DISCLAIMER } from "@/lib/showcase";
 
+// D59 public showcase shell: neutral look, app name "Arm's Length Check", disclaimer on every page.
 const navigation = [
   { title: "Home", to: "/" },
-  { title: "Cases", to: "/cases" },
-  { title: "Committees", to: "/committees" },
-  { title: "Templates", to: "/templates" },
-  { title: "Reports", to: "/reports" },
+  { title: "Guided demo", to: "/cases" },
+  { title: "Live example", to: "/live-example" },
+  { title: "Full live mode", to: "/live-full" },
 ] as const;
 
-function Mark() {
-  return <span className="fr-mark" aria-hidden="true">FR</span>;
-}
-
-export function FacultyShell({ children }: { children: ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [session, setSession] = useState<ActiveSession>();
-  useEffect(() => {
-    const sync = () => setSession(getActiveSession());
-    sync();
-    window.addEventListener(SESSION_CHANGE_EVENT, sync);
-    return () => window.removeEventListener(SESSION_CHANGE_EVENT, sync);
-  }, []);
-  useEffect(() => onCheckEvent(event => logResearchEvent(event.type, { reviewerId: event.reviewerId })), []);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [userEmail, setUserEmail] = useState<string>();
-  useEffect(() => {
-    const sync = () => void supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? ""));
-    sync();
-    window.addEventListener(AUTH_CHANGE_EVENT, sync);
-    return () => window.removeEventListener(AUTH_CHANGE_EVENT, sync);
-  }, []);
-  async function signOut() {
-    await queryClient.cancelQueries();
-    queryClient.clear();
-    await supabase.auth.signOut();
-    await navigate({ to: "/auth", search: { redirect: "/cases" }, replace: true });
-  }
-  return (
-    <div className="faculty-app">
-      <header className="faculty-header">
-        <Button variant="header" size="icon" className="shell-close" aria-label={sidebarOpen ? "Collapse navigation" : "Expand navigation"} title={sidebarOpen ? "Collapse navigation" : "Expand navigation"} onClick={() => setSidebarOpen(!sidebarOpen)}><X /></Button>
-        <Link to="/" className="faculty-brand"><Mark /><span>Faculty Review</span></Link>
-        {session && <span className="session-badge" title={`Research session ${session.participantCode}`}>Session mode · {session.participantCode}</span>}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild><Button variant="header" className="user-menu">{userEmail || "Dr. Lena Hoffmann"}<ChevronDown /></Button></DropdownMenuTrigger>
-          <DropdownMenuContent align="end">{userEmail ? <DropdownMenuItem onSelect={() => void signOut()}>Sign out</DropdownMenuItem> : <DropdownMenuItem onSelect={() => void navigate({ to: "/auth", search: { redirect: "/cases" } })}>Sign in</DropdownMenuItem>}</DropdownMenuContent>
-        </DropdownMenu>
-      </header>
-      <div className={`faculty-layout ${sidebarOpen ? "" : "navigation-collapsed"}`}>
-        {sidebarOpen && <aside className="faculty-sidebar">
-          <nav aria-label="Main navigation">{navigation.map(item => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} activeProps={{ className: "sidebar-link sidebar-link-active" }} inactiveProps={{ className: "sidebar-link" }}>{item.title}</Link>)}</nav>
-          <footer className="sidebar-footer"><Mark /><p>Prototype for research sessions</p><Button variant="link" className="policies-link">Program policies</Button></footer>
-        </aside>}
-        <main className="faculty-main">{children}</main>
-      </div>
-      <Button variant="contact" className="contact-button"><Mail />Contact us</Button>
-    </div>
-  );
+export function ShowcaseShell({ children }: { children: ReactNode }) {
+  return <div className="alc-app">
+    <header className="alc-header">
+      <Link to="/" className="alc-brand"><span className="alc-mark" aria-hidden="true">AL</span><span>Arm's Length Check</span></Link>
+      <nav aria-label="Main navigation" className="alc-nav">{navigation.map(item => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} activeProps={{ className: "alc-nav-link alc-nav-active" }} inactiveProps={{ className: "alc-nav-link" }}>{item.title}</Link>)}</nav>
+    </header>
+    <p className="alc-banner" role="note">{DISCLAIMER} <a href={ABOUT_URL} target="_blank" rel="noreferrer">About this concept</a></p>
+    <main className="alc-main">{children}</main>
+    <footer className="alc-footer">Public data from <a href="https://openalex.org" target="_blank" rel="noreferrer">OpenAlex</a> and <a href="https://orcid.org" target="_blank" rel="noreferrer">ORCID</a>. The tool flags; a person decides.</footer>
+  </div>;
 }
 
 export function PageHeading({ title }: { title: string }) {
-  return <div className="page-heading"><h1>{title}</h1><form className="page-search" role="search" onSubmit={event => event.preventDefault()}><input aria-label="Search Faculty Review" type="search" /><Button type="submit" size="icon" className="search-button" aria-label="Search" title="Search"><Search /></Button></form></div>;
+  return <div className="page-heading"><h1>{title}</h1></div>;
 }

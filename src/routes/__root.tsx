@@ -8,13 +8,11 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { FacultyShell } from "@/components/faculty-shell";
-import { supabase } from "@/integrations/supabase/client";
+import { ShowcaseShell } from "@/components/faculty-shell";
 
-export const AUTH_CHANGE_EVENT = "fr-auth-change";
 
 function NotFoundComponent() {
   return (
@@ -80,17 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Faculty Review" },
-      { name: "description", content: "Faculty tenure and promotion review prototype." },
-      { property: "og:title", content: "Faculty Review" },
-      { property: "og:description", content: "Faculty tenure and promotion review prototype." },
+      { title: "Arm's Length Check" },
+      { name: "description", content: "Concept: screening proposed external reviewers for conflicts of interest using public research data." },
+      { property: "og:title", content: "Arm's Length Check" },
+      { property: "og:description", content: "Concept: screening proposed external reviewers for conflicts of interest using public research data." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" },
       {
         rel: "stylesheet",
         href: appCss,
@@ -120,22 +115,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
-    });
-    return () => subscription.unsubscribe();
-  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <FacultyShell><Outlet /></FacultyShell>
+      <ShowcaseShell><Outlet /></ShowcaseShell>
     </QueryClientProvider>
   );
 }

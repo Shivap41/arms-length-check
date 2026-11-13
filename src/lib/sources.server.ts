@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { stripTrailingInitials } from "./identity";
 
-export type SourceErrorType = "Timeout" | "RateLimited" | "BudgetOrAuth" | "NotFound" | "Upstream";
+export type SourceErrorType = "Timeout" | "RateLimited" | "BudgetOrAuth" | "NotFound" | "Upstream" | "QuotaReached";
 export class SourceError extends Error {
   constructor(public readonly type: SourceErrorType, public readonly status?: number) {
     super(`Couldn't check: ${type}`); this.name = type;
@@ -70,6 +70,8 @@ export function createSources(options: {
   fetch?: typeof fetch; now?: () => number; sleep?: (ms: number) => Promise<void>;
   /** Called once per request with whether it was served from api_cache (for call counts). */
   onResult?: (fromCache: boolean) => void;
+  /** Called before every fresh (uncached) OpenAlex call; throw SourceError("QuotaReached") to refuse it (D59). */
+  beforeFresh?: () => Promise<void>;
 }) {
   const fetcher = options.fetch ?? fetch;
   const now = options.now ?? Date.now;
@@ -94,6 +96,7 @@ export function createSources(options: {
         }
       }
       if (source === "openalex") {
+        await options.beforeFresh?.();
         if (!options.apiKey) throw new SourceError("BudgetOrAuth");
         url.searchParams.set("api_key", options.apiKey);
       }

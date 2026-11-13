@@ -50,6 +50,13 @@
       "when": 1794620000000,
       "tag": "0006_check_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794640000000,
+      "tag": "0007_showcase_quota",
+      "breakpoints": true
     }
   ]
 }

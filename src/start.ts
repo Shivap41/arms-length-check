@@ -1,7 +1,6 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
-import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -32,6 +31,6 @@ const csrfMiddleware = createCsrfMiddleware({
 // user-managed Supabase project is connected, no middleware here sets Authorization, and the
 // project did not intentionally replace it.
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  // D59 public showcase: no sign-in, so no bearer-token middleware.
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

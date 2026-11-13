@@ -10,22 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CasesRouteImport } from './routes/cases'
-import { Route as CommitteesRouteImport } from './routes/committees'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as SessionRouteImport } from './routes/session'
-import { Route as TemplatesRouteImport } from './routes/templates'
-import { Route as AdminRegressionRouteImport } from './routes/admin.regression'
-import { Route as AdminSelftestRouteImport } from './routes/admin.selftest'
+import { Route as LiveExampleRouteImport } from './routes/live-example'
+import { Route as LiveFullRouteImport } from './routes/live-full'
 import { Route as CasesIndexRouteImport } from './routes/cases.index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
-import { Route as SessionIndexRouteImport } from './routes/session.index'
-import { Route as SessionBriefRouteImport } from './routes/session.brief'
-import { Route as SessionResultsRouteImport } from './routes/session.results'
-import { Route as AuthenticatedLiveCaseIdRouteImport } from './routes/_authenticated/live.$caseId'
-import { Route as AuthenticatedLiveNewRouteImport } from './routes/_authenticated/live.new'
 import { Route as CasesCaseIdScreeningRouteImport } from './routes/cases.$caseId_.screening'
 import { Route as CasesCaseIdScreeningResultsRouteImport } from './routes/cases.$caseId_.screening_.results'
 import { Route as CasesCaseIdScreeningProfileProfileIdRouteImport } from './routes/cases.$caseId_.screening_.profile.$profileId'
@@ -35,48 +24,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CasesRoute = CasesRouteImport.update({
   id: '/cases',
   path: '/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CommitteesRoute = CommitteesRouteImport.update({
-  id: '/committees',
-  path: '/committees',
+const LiveExampleRoute = LiveExampleRouteImport.update({
+  id: '/live-example',
+  path: '/live-example',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SessionRoute = SessionRouteImport.update({
-  id: '/session',
-  path: '/session',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRegressionRoute = AdminRegressionRouteImport.update({
-  id: '/admin/regression',
-  path: '/admin/regression',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSelftestRoute = AdminSelftestRouteImport.update({
-  id: '/admin/selftest',
-  path: '/admin/selftest',
+const LiveFullRoute = LiveFullRouteImport.update({
+  id: '/live-full',
+  path: '/live-full',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasesIndexRoute = CasesIndexRouteImport.update({
@@ -88,31 +48,6 @@ const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
   id: '/$caseId',
   path: '/$caseId',
   getParentRoute: () => CasesRoute,
-} as any)
-const SessionIndexRoute = SessionIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SessionRoute,
-} as any)
-const SessionBriefRoute = SessionBriefRouteImport.update({
-  id: '/brief',
-  path: '/brief',
-  getParentRoute: () => SessionRoute,
-} as any)
-const SessionResultsRoute = SessionResultsRouteImport.update({
-  id: '/results',
-  path: '/results',
-  getParentRoute: () => SessionRoute,
-} as any)
-const AuthenticatedLiveCaseIdRoute = AuthenticatedLiveCaseIdRouteImport.update({
-  id: '/live/$caseId',
-  path: '/live/$caseId',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedLiveNewRoute = AuthenticatedLiveNewRouteImport.update({
-  id: '/live/new',
-  path: '/live/new',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const CasesCaseIdScreeningRoute = CasesCaseIdScreeningRouteImport.update({
   id: '/$caseId_/screening',
@@ -134,40 +69,21 @@ const CasesCaseIdScreeningProfileProfileIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
   '/cases': typeof CasesRouteWithChildren
-  '/committees': typeof CommitteesRoute
-  '/reports': typeof ReportsRoute
-  '/session': typeof SessionRouteWithChildren
-  '/templates': typeof TemplatesRoute
-  '/admin/regression': typeof AdminRegressionRoute
-  '/admin/selftest': typeof AdminSelftestRoute
+  '/live-example': typeof LiveExampleRoute
+  '/live-full': typeof LiveFullRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
-  '/session/brief': typeof SessionBriefRoute
-  '/session/results': typeof SessionResultsRoute
   '/cases/': typeof CasesIndexRoute
-  '/session/': typeof SessionIndexRoute
-  '/live/$caseId': typeof AuthenticatedLiveCaseIdRoute
-  '/live/new': typeof AuthenticatedLiveNewRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/committees': typeof CommitteesRoute
-  '/reports': typeof ReportsRoute
-  '/templates': typeof TemplatesRoute
-  '/admin/regression': typeof AdminRegressionRoute
-  '/admin/selftest': typeof AdminSelftestRoute
+  '/live-example': typeof LiveExampleRoute
+  '/live-full': typeof LiveFullRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
-  '/session/brief': typeof SessionBriefRoute
-  '/session/results': typeof SessionResultsRoute
   '/cases': typeof CasesIndexRoute
-  '/session': typeof SessionIndexRoute
-  '/live/$caseId': typeof AuthenticatedLiveCaseIdRoute
-  '/live/new': typeof AuthenticatedLiveNewRoute
   '/cases/$caseId/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId/screening/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId/screening/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
@@ -175,22 +91,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
   '/cases': typeof CasesRouteWithChildren
-  '/committees': typeof CommitteesRoute
-  '/reports': typeof ReportsRoute
-  '/session': typeof SessionRouteWithChildren
-  '/templates': typeof TemplatesRoute
-  '/admin/regression': typeof AdminRegressionRoute
-  '/admin/selftest': typeof AdminSelftestRoute
+  '/live-example': typeof LiveExampleRoute
+  '/live-full': typeof LiveFullRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
-  '/session/brief': typeof SessionBriefRoute
-  '/session/results': typeof SessionResultsRoute
   '/cases/': typeof CasesIndexRoute
-  '/session/': typeof SessionIndexRoute
-  '/_authenticated/live/$caseId': typeof AuthenticatedLiveCaseIdRoute
-  '/_authenticated/live/new': typeof AuthenticatedLiveNewRoute
   '/cases/$caseId_/screening': typeof CasesCaseIdScreeningRoute
   '/cases/$caseId_/screening_/results': typeof CasesCaseIdScreeningResultsRoute
   '/cases/$caseId_/screening_/profile/$profileId': typeof CasesCaseIdScreeningProfileProfileIdRoute
@@ -199,62 +104,32 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/cases'
-    | '/committees'
-    | '/reports'
-    | '/session'
-    | '/templates'
-    | '/admin/regression'
-    | '/admin/selftest'
+    | '/live-example'
+    | '/live-full'
     | '/cases/$caseId'
-    | '/session/brief'
-    | '/session/results'
     | '/cases/'
-    | '/session/'
-    | '/live/$caseId'
-    | '/live/new'
     | '/cases/$caseId/screening'
     | '/cases/$caseId/screening/results'
     | '/cases/$caseId/screening/profile/$profileId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
-    | '/committees'
-    | '/reports'
-    | '/templates'
-    | '/admin/regression'
-    | '/admin/selftest'
+    | '/live-example'
+    | '/live-full'
     | '/cases/$caseId'
-    | '/session/brief'
-    | '/session/results'
     | '/cases'
-    | '/session'
-    | '/live/$caseId'
-    | '/live/new'
     | '/cases/$caseId/screening'
     | '/cases/$caseId/screening/results'
     | '/cases/$caseId/screening/profile/$profileId'
   id:
     | '__root__'
     | '/'
-    | '/_authenticated'
-    | '/auth'
     | '/cases'
-    | '/committees'
-    | '/reports'
-    | '/session'
-    | '/templates'
-    | '/admin/regression'
-    | '/admin/selftest'
+    | '/live-example'
+    | '/live-full'
     | '/cases/$caseId'
-    | '/session/brief'
-    | '/session/results'
     | '/cases/'
-    | '/session/'
-    | '/_authenticated/live/$caseId'
-    | '/_authenticated/live/new'
     | '/cases/$caseId_/screening'
     | '/cases/$caseId_/screening_/results'
     | '/cases/$caseId_/screening_/profile/$profileId'
@@ -262,15 +137,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
   CasesRoute: typeof CasesRouteWithChildren
-  CommitteesRoute: typeof CommitteesRoute
-  ReportsRoute: typeof ReportsRoute
-  SessionRoute: typeof SessionRouteWithChildren
-  TemplatesRoute: typeof TemplatesRoute
-  AdminRegressionRoute: typeof AdminRegressionRoute
-  AdminSelftestRoute: typeof AdminSelftestRoute
+  LiveExampleRoute: typeof LiveExampleRoute
+  LiveFullRoute: typeof LiveFullRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -282,20 +151,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cases': {
       id: '/cases'
       path: '/cases'
@@ -303,46 +158,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/committees': {
-      id: '/committees'
-      path: '/committees'
-      fullPath: '/committees'
-      preLoaderRoute: typeof CommitteesRouteImport
+    '/live-example': {
+      id: '/live-example'
+      path: '/live-example'
+      fullPath: '/live-example'
+      preLoaderRoute: typeof LiveExampleRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/session': {
-      id: '/session'
-      path: '/session'
-      fullPath: '/session'
-      preLoaderRoute: typeof SessionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/regression': {
-      id: '/admin/regression'
-      path: '/admin/regression'
-      fullPath: '/admin/regression'
-      preLoaderRoute: typeof AdminRegressionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/selftest': {
-      id: '/admin/selftest'
-      path: '/admin/selftest'
-      fullPath: '/admin/selftest'
-      preLoaderRoute: typeof AdminSelftestRouteImport
+    '/live-full': {
+      id: '/live-full'
+      path: '/live-full'
+      fullPath: '/live-full'
+      preLoaderRoute: typeof LiveFullRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cases/': {
@@ -358,41 +185,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/cases/$caseId'
       preLoaderRoute: typeof CasesCaseIdRouteImport
       parentRoute: typeof CasesRoute
-    }
-    '/session/': {
-      id: '/session/'
-      path: '/'
-      fullPath: '/session/'
-      preLoaderRoute: typeof SessionIndexRouteImport
-      parentRoute: typeof SessionRoute
-    }
-    '/session/brief': {
-      id: '/session/brief'
-      path: '/brief'
-      fullPath: '/session/brief'
-      preLoaderRoute: typeof SessionBriefRouteImport
-      parentRoute: typeof SessionRoute
-    }
-    '/session/results': {
-      id: '/session/results'
-      path: '/results'
-      fullPath: '/session/results'
-      preLoaderRoute: typeof SessionResultsRouteImport
-      parentRoute: typeof SessionRoute
-    }
-    '/_authenticated/live/$caseId': {
-      id: '/_authenticated/live/$caseId'
-      path: '/live/$caseId'
-      fullPath: '/live/$caseId'
-      preLoaderRoute: typeof AuthenticatedLiveCaseIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/live/new': {
-      id: '/_authenticated/live/new'
-      path: '/live/new'
-      fullPath: '/live/new'
-      preLoaderRoute: typeof AuthenticatedLiveNewRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/cases/$caseId_/screening': {
       id: '/cases/$caseId_/screening'
@@ -418,19 +210,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedLiveCaseIdRoute: typeof AuthenticatedLiveCaseIdRoute
-  AuthenticatedLiveNewRoute: typeof AuthenticatedLiveNewRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedLiveCaseIdRoute: AuthenticatedLiveCaseIdRoute,
-  AuthenticatedLiveNewRoute: AuthenticatedLiveNewRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 interface CasesRouteChildren {
   CasesCaseIdRoute: typeof CasesCaseIdRoute
   CasesIndexRoute: typeof CasesIndexRoute
@@ -450,32 +229,11 @@ const CasesRouteChildren: CasesRouteChildren = {
 
 const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)
 
-interface SessionRouteChildren {
-  SessionBriefRoute: typeof SessionBriefRoute
-  SessionResultsRoute: typeof SessionResultsRoute
-  SessionIndexRoute: typeof SessionIndexRoute
-}
-
-const SessionRouteChildren: SessionRouteChildren = {
-  SessionBriefRoute: SessionBriefRoute,
-  SessionResultsRoute: SessionResultsRoute,
-  SessionIndexRoute: SessionIndexRoute,
-}
-
-const SessionRouteWithChildren =
-  SessionRoute._addFileChildren(SessionRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
   CasesRoute: CasesRouteWithChildren,
-  CommitteesRoute: CommitteesRoute,
-  ReportsRoute: ReportsRoute,
-  SessionRoute: SessionRouteWithChildren,
-  TemplatesRoute: TemplatesRoute,
-  AdminRegressionRoute: AdminRegressionRoute,
-  AdminSelftestRoute: AdminSelftestRoute,
+  LiveExampleRoute: LiveExampleRoute,
+  LiveFullRoute: LiveFullRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

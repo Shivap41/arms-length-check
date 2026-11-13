@@ -8,9 +8,9 @@ import { getCase, type CaseRecord } from "@/data/screeningService";
 
 export const Route = createFileRoute("/cases/$caseId")({
   head: ({ params }) => ({ meta: [
-    { title: params.caseId === "ortiz-2027" ? "Dr. Maya Ortiz — Tenure review | Faculty Review" : "Case unavailable | Faculty Review" },
+    { title: params.caseId === "ortiz-2027" ? "Dr. Maya Ortiz — Tenure review | Arm's Length Check" : "Case unavailable | Arm's Length Check" },
     { name: "description", content: "Faculty tenure review case for Dr. Maya Ortiz, Chemistry." },
-    { property: "og:title", content: "Tenure review | Faculty Review" },
+    { property: "og:title", content: "Tenure review | Arm's Length Check" },
     { property: "og:description", content: "Faculty tenure review case for Dr. Maya Ortiz, Chemistry." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },

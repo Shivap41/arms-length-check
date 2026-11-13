@@ -7,9 +7,9 @@ import { ConfirmReviewers } from "@/components/confirm-reviewers";
 export const Route = createFileRoute("/cases/$caseId_/screening")({
   validateSearch: z.object({ screeningId: z.string().max(150).optional(), reviewerId: z.string().max(150).optional() }),
   head: () => ({ meta: [
-    { title: "Conflict screening | Faculty Review" },
+    { title: "Conflict screening | Arm's Length Check" },
     { name: "description", content: "External reviewer conflict screening for the faculty tenure review case." },
-    { property: "og:title", content: "Conflict screening | Faculty Review" },
+    { property: "og:title", content: "Conflict screening | Arm's Length Check" },
     { property: "og:description", content: "External reviewer conflict screening for the faculty tenure review case." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary_large_image" },

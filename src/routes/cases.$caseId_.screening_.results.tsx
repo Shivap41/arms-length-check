@@ -6,9 +6,9 @@ import { ReviewResults } from "@/components/review-results";
 export const Route = createFileRoute("/cases/$caseId_/screening_/results")({
   validateSearch: z.object({ screeningId: z.string().max(150).optional() }),
   head: () => ({ meta: [
-    { title: "Review results | Faculty Review" },
+    { title: "Review results | Arm's Length Check" },
     { name: "description", content: "Review results after confirming external reviewer identities." },
-    { property: "og:title", content: "Review results | Faculty Review" },
+    { property: "og:title", content: "Review results | Arm's Length Check" },
     { property: "og:description", content: "Review results after confirming external reviewer identities." },
     { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
   ] }),
