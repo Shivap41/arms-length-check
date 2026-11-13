@@ -3,11 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, ChevronRight, ClipboardList, Info, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { LiveIdentityStep } from "@/components/live-identity";
 import { supabase } from "@/integrations/supabase/client";
 import {
   addLiveDeclaration,
   addLiveReviewers,
+  canStartLiveChecks,
   declarationRelationshipLabels,
   declarationRelationships,
   getLiveCase,
@@ -17,7 +18,6 @@ import {
   parseReviewerList,
   removeLiveReviewer,
   reviewerSchema,
-  setLiveCandidateConfirmed,
   type DeclarationRelationship,
   type LiveCase,
   type LiveDeclaration,
@@ -96,11 +96,6 @@ function LiveCaseDetail() {
       setDeclarationDraft({ name: "", relationship: "advisor", note: "" }); setDeclarationError(""); setNotice("Declaration added.");
     } catch { setDeclarationError("Couldn't save the declaration. Try again."); }
   }
-  async function confirmCandidate(next: boolean) {
-    setCaseRecord(previous => previous ? { ...previous, candidateConfirmedBy: next ? userEmail : "" } : previous);
-    try { await setLiveCandidateConfirmed(caseId, next ? userEmail : ""); }
-    catch { setCaseRecord(previous => previous ? { ...previous, candidateConfirmedBy: next ? "" : userEmail } : previous); setNotice("Couldn't save the confirmation. Try again."); }
-  }
 
   return <><header className="case-header"><h1>{caseRecord.title} <span className="live-badge">Live data</span></h1><p>{caseRecord.candidateName} · {caseRecord.candidateInstitution}{caseRecord.candidateOrcid ? ` · ORCID ${caseRecord.candidateOrcid}` : ""}</p></header>
     <ol className="case-steps" aria-label="Review progress">{["Packet submitted", "External evaluations", "Department vote", "College review", "Decision"].map((step, index) => <li key={step} className={index === 0 ? "step-done" : index === 1 ? "step-current" : ""} aria-current={index === 1 ? "step" : undefined}><span className="step-symbol">{index === 0 ? <Check /> : index + 1}</span><span>{step}</span>{index < 4 && <ChevronRight className="step-arrow" />}</li>)}</ol>
@@ -131,8 +126,8 @@ function LiveCaseDetail() {
           </form>
           <div className="paste-controls"><Button variant="link" className="paste-toggle" aria-expanded={pasteOpen} onClick={() => setPasteOpen(!pasteOpen)}><ClipboardList />Paste a list</Button>{pasteOpen && <div className="paste-form"><label htmlFor="live-reviewer-list">Name, Institution, ORCID (optional) — one reviewer per line</label><textarea id="live-reviewer-list" value={paste} onChange={event => setPaste(event.target.value)} maxLength={30000} rows={5} /><Button variant="outline" onClick={() => void addList()} disabled={!paste.trim()}><Plus />Add list</Button>{unreadLines.length > 0 && <div className="paste-errors" role="alert"><h3>Lines that could not be read</h3><ul>{unreadLines.map(error => <li key={error.line}>Line {error.line}: {error.text}<br />{error.message}</li>)}</ul></div>}</div>}</div>
           {notice && <p className="reviewer-notice" role="status">{notice}</p>}
-          <div className="candidate-confirmation"><Checkbox id="live-candidate-confirmed" checked={Boolean(caseRecord.candidateConfirmedBy)} onCheckedChange={value => void confirmCandidate(value === true)} /><label htmlFor="live-candidate-confirmed">I confirm the candidate is {caseRecord.candidateName}, {caseRecord.candidateInstitution}.</label></div>
-          <div className="screening-action"><Button disabled title="Live conflict checking connects to OpenAlex and ORCID in the next step.">Check for conflicts</Button><p className="field-help">Live conflict checking connects to OpenAlex and ORCID in the next step.</p></div>
+          <LiveIdentityStep caseRecord={caseRecord} reviewers={reviewers} onCaseChange={setCaseRecord} />
+          <div className="screening-action"><Button disabled title={canStartLiveChecks(caseRecord) ? "Live conflict checks arrive in the next step (B4)." : "Confirm the candidate first."}>Check for conflicts</Button><p className="field-help">{canStartLiveChecks(caseRecord) ? "Live conflict checks arrive in the next step (B4)." : "No reviewer check can start until the candidate is confirmed."}</p></div>
         </section><aside className="screening-info"><Info aria-hidden="true" /><p>Arm's Length Check flags possible conflicts of interest using public publication data. It never decides: you do.</p></aside></div>
       </TabsContent>
       {["Overview", "Packet", "Committee", "Decision"].map(tab => <TabsContent value={tab} key={tab}><p className="prototype-unavailable">Not part of this prototype</p></TabsContent>)}

@@ -36,6 +36,13 @@
       "when": 1794600000000,
       "tag": "0004_tighten_default_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794610000000,
+      "tag": "0005_candidate_identity",
+      "breakpoints": true
     }
   ]
 }

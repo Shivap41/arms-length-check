@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { stripTrailingInitials } from "./identity";
 
 export type SourceErrorType = "Timeout" | "RateLimited" | "BudgetOrAuth" | "NotFound" | "Upstream";
 export class SourceError extends Error {
@@ -36,6 +37,7 @@ const employmentSchema = z.object({ "affiliation-group": z.array(z.object({
   }).passthrough() }).passthrough()),
 }).passthrough()).nullable().transform(groups => groups ?? []) }).passthrough();
 const worksPageSchema = z.object({ results: z.array(workSchema), meta: z.object({ next_cursor: z.string().nullable().optional() }).passthrough() });
+const recentWorksSchema = z.object({ results: z.array(z.object({ id: z.string(), doi: z.string().nullable(), title: z.string().nullable(), publication_year: z.number().nullable() }).passthrough()) }).passthrough();
 const authorSearchSchema = z.object({ results: z.array(authorSchema) }).passthrough();
 // Ephemeral scheduling only; durable responses always live in api_cache.
 const gates = new Map<string, { active: number; queue: (() => void)[] }>();
@@ -53,11 +55,7 @@ async function limited<T>(screeningId: string, work: () => Promise<T>): Promise<
     if (!gate.active) gates.delete(screeningId);
   }
 }
-export function stripTrailingInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  while (parts.length > 1 && /^\p{L}\.?$/u.test(parts.at(-1) ?? "")) parts.pop();
-  return z.string().min(1).max(200).parse(parts.join(" "));
-}
+export { stripTrailingInitials };
 function entityId(value: string, prefix: "A" | "I"): string {
   return z.string().regex(new RegExp(`^${prefix}\\d+$`)).parse(value.replace(/^https:\/\/openalex\.org\//, ""));
 }
@@ -156,6 +154,11 @@ export function createSources(options: {
         cursor = result.data.meta.next_cursor ?? null;
       }
       return { data, fromCache };
+    },
+    /** The n most recent works for a profile card (title, year, DOI). */
+    getRecentWorks: async (id: string, n = 3): Promise<CachedResponse<{ title: string; year: number | null; doi: string | null }[]>> => {
+      const result = await request("openalex", "/works", { filter: `authorships.author.id:${entityId(id, "A")}`, sort: "publication_date:desc", "per-page": String(z.number().int().min(1).max(10).parse(n)), select: "id,doi,title,publication_year" }, recentWorksSchema);
+      return { data: result.data.results.map(work => ({ title: work.title ?? "Untitled", year: work.publication_year, doi: work.doi })), fromCache: result.fromCache };
     },
     getSharedWorks: async (idsA: string[], idsB: string[]): Promise<CachedResponse<Work[]>> => {
       const ids = (values: string[]) => z.array(z.string()).min(1).max(100).parse(values).map(id => entityId(id, "A")).sort().join("|");

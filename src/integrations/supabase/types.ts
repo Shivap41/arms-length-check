@@ -35,6 +35,10 @@ export type Database = {
       cases: {
         Row: {
           candidate_confirmed_by: string | null
+          candidate_confirmed_at: string | null
+          candidate_identity_method: string | null
+          candidate_identity_reason: string | null
+          candidate_identity_status: string
           candidate_institution: string
           candidate_name: string
           candidate_orcid: string | null
@@ -46,6 +50,10 @@ export type Database = {
         }
         Insert: {
           candidate_confirmed_by?: string | null
+          candidate_confirmed_at?: string | null
+          candidate_identity_method?: string | null
+          candidate_identity_reason?: string | null
+          candidate_identity_status?: string
           candidate_institution: string
           candidate_name: string
           candidate_orcid?: string | null
@@ -57,6 +65,10 @@ export type Database = {
         }
         Update: {
           candidate_confirmed_by?: string | null
+          candidate_confirmed_at?: string | null
+          candidate_identity_method?: string | null
+          candidate_identity_reason?: string | null
+          candidate_identity_status?: string
           candidate_institution?: string
           candidate_name?: string
           candidate_orcid?: string | null

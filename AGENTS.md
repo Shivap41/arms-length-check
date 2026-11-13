@@ -1,49 +1,58 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
+# Arm's Length Check: notes for coding agents
 
-## What Lovable manages
+Arm's Length Check screens proposed external reviewers in a tenure case for conflicts of interest
+using public data (OpenAlex, ORCID). The tool flags; the chair decides.
 
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
-connected, `send_message` asks Lovable to do it; otherwise ask the user to
-use the editor.
+## Architecture (decision D56)
 
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
-- **Generated files.** Do not edit a file whose header says it is automatically
-  generated.
-- **AI gateway.** Keep model calls on Lovable's gateway, and keep
-  `LOVABLE_API_KEY` out of browser code.
-- **Connectors.** Lovable provides native connectors. `list_connectors` shows
-  which are enabled; `add_connector` only returns the dashboard link. When a
-  connector is enabled, calls go through the connector gateway and need
-  `LOVABLE_API_KEY`. When Lovable does not provide one, users can bring their
-  own key and store it in Secrets.
-- **Secrets.** Lovable manages them. Do not put secret values in the repo.
-<!-- LOVABLE:END -->
+- **App:** TanStack Start (React 19, Vite, Tailwind), built for Cloudflare Workers by
+  `@lovable.dev/vite-tanstack-config`. It runs locally with `npm run dev`.
+- **Server code is TanStack server functions** (`createServerFn` in `src/lib/*.functions.ts`),
+  not Supabase edge functions. Protect them with `requireSupabaseAuth`. Load server-only modules
+  inside handlers with `await import(...)`, because `*.functions.ts` files also ship to the client.
+  Server-only modules end in `.server.ts`.
+- **Database and auth:** the PM's own Supabase project (`supabase/config.toml`), with email +
+  password sign-in. Migrations are plain SQL in `drizzle/migrations/` (`drizzle.config.ts` reads
+  `DATABASE_URL`); add the next numbered file and a `_journal.json` entry. Every table has
+  row-level security, and grants are explicit: new tables get no default grants (migration 0004).
+- **Secrets:** only in `.env.local`, which is never committed (`.env*` is ignored; see
+  `.env.example`). `OPENALEX_API_KEY`, `RESEARCH_PASSCODE` and `SUPABASE_SERVICE_ROLE_KEY` are
+  server-only. Only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` may reach the browser.
+  After a build, check that no secret value appears in `.output/public`.
+- **Git:** work on the `claude-code` branch. `main` is the Lovable snapshot (tag
+  `lovable-snapshot`). Lovable is no longer used.
+
+## Non-negotiable rules
+
+- No check runs on an unconfirmed identity. The candidate is confirmed before any reviewer.
+- Nothing without an ORCID is confirmed automatically (v1). A valid ORCID (ISO 7064 check digit)
+  confirms; everything else goes to the chair (pick a card, paste, or Can't tell).
+- An API error is never shown as "No conflict found", "Insufficient data" or "no matches". Show
+  "Couldn't check" / "Couldn't search: try again" with Retry.
+- The OpenAlex key never reaches the browser. All OpenAlex and ORCID HTTP calls live in
+  `src/lib/sources.server.ts`, with the 24-hour `api_cache`, retries, a 10 s timeout and at most
+  4 calls in flight per screening.
+- Components get data only through `src/data/screeningService.ts`.
+- Rules (B4) are pure functions with no network calls; their numbers live in one config file.
 
 ## Application structure
+
 - Keep the frontend-only prototype shell in a shared component mounted around the root Outlet so navigation stays consistent across pages.
 - Use a cases layout with an Outlet and separate index/detail leaves so both list and dynamic case URLs render correctly.
 - Keep all visual tokens and shell styles in src/styles.css and use design-system controls for actions so the reference styling stays consistent.
-- Keep case and screening data behind typed src/data/screeningService.ts functions with browser-only in-memory mutations and shared Zod validation; components must not import data directly.
+- Keep case and screening data behind typed src/data/screeningService.ts functions with shared Zod validation; components must not import data directly. Demo data stays in browser memory.
 - Mount session-backed case content after hydration and use an unnested screening leaf so the full case page does not swallow the screening destination.
 - Keep fictional scenario fixtures in demoScenario.ts and expose cloned profiles and choice-driven outcomes only through screeningService.ts; loading replaces the demo roster and never performs identifier lookups.
-- Keep identity-step views free of conflict outcomes, derive progress from actual choices, and route every choice/undo through confirmIdentity; finalize the same screening snapshot only after all rows are handled.
+- Keep identity-step views free of conflict outcomes, derive progress from actual choices, and route every demo choice/undo through confirmIdentity; finalize the same screening snapshot only after all rows are handled.
 - Derive results counts, sorting, reasons, and evidence from the current screening snapshot through service helpers; name-only paper decisions update only that evidence match, while identity changes reset its outcome.
-
 - Record chair decisions and audit snapshots through screeningService in browser memory; invalidate decisions when identity or evidence changes so exports never contain stale approvals.
 - Generate audit downloads as escaped standalone HTML from the service snapshot, keeping exports usable offline without server dependencies.
 - Research-session logging writes anonymous, insert-only rows from the browser through a background queue in src/lib/research-session.ts so it never blocks the UI; results are read only by a passcode-checked server function and computed by pure helpers in src/lib/session-metrics.ts.
 - Simulated check latency, stages, profile-search waits and failures live only in screeningService.ts (runCheck/searchProfiles); components subscribe via subscribeChecks so a real backend can replace the timing without UI changes.
 - Live mode lives alongside the demo: screeningService.ts owns DATA_MODE (research sessions force demo) and all live-table access through its live functions; live pages sit under the _authenticated gate because RLS scopes every live table to the signed-in user's own cases.
-- All OpenAlex/ORCID HTTP calls live exclusively in src/lib/sources.server.ts, dynamically imported inside server handlers with injected credentials and a server-managed cache; this keeps API keys and upstream requests out of browser code.
-- Create one sources client per screening and reuse its screeningId across tasks; the shared four-slot limiter prevents parallel reviewer checks from exceeding the source concurrency limit within a worker.
-- New app-internal endpoints use authenticated TanStack server functions, not new Edge Functions; this matches the deployed runtime and protects paid source calls and cache writes.
+- Create one sources client per screening (`serverSources` in src/lib/server-sources.server.ts) and reuse its screeningId across tasks; the shared four-slot limiter prevents parallel reviewer checks from exceeding the source concurrency limit within a worker.
+- Live identity (B3): pure helpers in src/lib/identity.ts (check digit, link parsing, 0.5/0.4/0.1 scoring, profile summaries), the server step in src/lib/identify.server.ts behind the `identifyPerson` / `resolveProfileLink` server functions, and the UI in src/components/live-identity.tsx. Choices are saved to `cases` (candidate) and `screening_names` (reviewers).
+
+## Checks before committing
+
+`npx tsc --noEmit`, `npm test`, `npm run build`, then scan `.output/public` for secret values.

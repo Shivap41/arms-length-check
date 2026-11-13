@@ -3,6 +3,8 @@ import { demoScenario, demoChoiceKey, type DemoAnswer, type DemoProfile, type De
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveSession } from "@/lib/research-session";
 import { checkDataConnection as checkConnection } from "@/lib/data-connection.functions";
+import { identifyPerson, resolveProfileLink } from "@/lib/identity.functions";
+import { isValidOrcid, NO_INDEXED_WORKS, type IdentifyResult, type ResolveResult } from "@/lib/identity";
 
 const orcidPattern = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
 export const identitySchema = z.string().trim().max(500, "Profile link is too long.").refine(value => {
@@ -394,16 +396,20 @@ export function setDataMode(mode: DataMode): void {
 // Live cases. Components reach the live tables only through these functions;
 // row-level security limits every query to the signed-in user's own cases.
 // Live conflict checking (OpenAlex/ORCID calls) is added in a later step.
-export type LiveCase = { id: string; title: string; candidateName: string; candidateInstitution: string; candidateOrcid: string; candidateConfirmedBy: string; createdAt: string };
+export type LiveIdentityStatus = "needs_chair" | "confirmed" | "cant_tell";
+export type LiveIdentityMethod = "orcid" | "chair_pick" | "chair_paste";
+export type LiveIdentity = { status: LiveIdentityStatus; method: LiveIdentityMethod | null; profileIds: string[]; confirmedBy: string; confirmedAt: string | null; reason: string };
+export type LiveCase = { id: string; title: string; candidateName: string; candidateInstitution: string; candidateOrcid: string; candidateIdentity: LiveIdentity; createdAt: string };
 export const liveCaseSchema = z.object({
   candidateName: z.string().trim().min(1, "Candidate name is required.").max(150, "Name must be 150 characters or fewer."),
   institution: z.string().trim().min(1, "Institution is required.").max(200, "Institution must be 200 characters or fewer."),
-  orcid: z.string().trim().max(500).refine(value => !value || orcidPattern.test(value), "Enter a formatted ORCID iD (0000-0000-0000-000X).").default(""),
+  orcid: z.string().trim().max(500).refine(value => !value || orcidPattern.test(value), "Enter a formatted ORCID iD (0000-0000-0000-000X).").refine(value => !value || !orcidPattern.test(value) || isValidOrcid(value), "That ORCID iD's check digit is wrong. Check it for a typo.").default(""),
 });
 export type LiveCaseInput = z.input<typeof liveCaseSchema>;
-type LiveCaseRow = { id: string; title: string; candidate_name: string; candidate_institution: string; candidate_orcid: string | null; candidate_confirmed_by: string | null; created_at: string };
+type LiveCaseRow = { id: string; title: string; candidate_name: string; candidate_institution: string; candidate_orcid: string | null; candidate_confirmed_by: string | null; candidate_profile_ids: string[]; candidate_identity_status: string; candidate_identity_method: string | null; candidate_confirmed_at: string | null; candidate_identity_reason: string | null; created_at: string };
 function mapLiveCase(row: LiveCaseRow): LiveCase {
-  return { id: row.id, title: row.title, candidateName: row.candidate_name, candidateInstitution: row.candidate_institution, candidateOrcid: row.candidate_orcid ?? "", candidateConfirmedBy: row.candidate_confirmed_by ?? "", createdAt: row.created_at };
+  return { id: row.id, title: row.title, candidateName: row.candidate_name, candidateInstitution: row.candidate_institution, candidateOrcid: row.candidate_orcid ?? "", createdAt: row.created_at,
+    candidateIdentity: { status: row.candidate_identity_status as LiveIdentityStatus, method: row.candidate_identity_method as LiveIdentityMethod | null, profileIds: row.candidate_profile_ids ?? [], confirmedBy: row.candidate_confirmed_by ?? "", confirmedAt: row.candidate_confirmed_at, reason: row.candidate_identity_reason ?? "" } };
 }
 export async function listLiveCases(): Promise<LiveCase[]> {
   const { data, error } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
@@ -464,8 +470,81 @@ export async function addLiveDeclaration(caseId: string, input: LiveDeclarationI
   if (error) throw new Error("Couldn't save the declaration. Try again.");
   return listLiveDeclarations(caseId);
 }
-export async function setLiveCandidateConfirmed(caseId: string, confirmedBy: string): Promise<void> {
+// Live identity step (B3). Identification runs only in server functions; this service saves
+// the chair's choices. Nothing without an ORCID is confirmed automatically (v1).
+export type LiveScreeningName = { id: string; reviewerId: string; identity: LiveIdentity; checkStatus: string; result: string | null };
+export type LiveScreening = { id: string; names: LiveScreeningName[] };
+export type LiveIdentityChoice =
+  | { kind: "orcid"; profileId: string }
+  | { kind: "orcid_insufficient" }
+  | { kind: "pick"; profileIds: string[] }
+  | { kind: "paste"; profileIds: string[] }
+  | { kind: "cant_tell" }
+  | { kind: "reset" };
+export const IDENTITY_NOT_CONFIRMED = "Identity not confirmed";
+type IdentityColumns = { status: LiveIdentityStatus; method: LiveIdentityMethod | null; profileIds: string[]; reason: string | null; result: "insufficient" | null };
+export function identityColumns(choice: LiveIdentityChoice): IdentityColumns {
+  switch (choice.kind) {
+    case "orcid": return { status: "confirmed", method: "orcid", profileIds: [choice.profileId], reason: null, result: null };
+    case "orcid_insufficient": return { status: "cant_tell", method: "orcid", profileIds: [], reason: NO_INDEXED_WORKS, result: "insufficient" };
+    case "pick": return { status: "confirmed", method: "chair_pick", profileIds: z.array(z.string().regex(/^A\d+$/)).min(1).max(5).parse(choice.profileIds), reason: null, result: null };
+    case "paste": return { status: "confirmed", method: "chair_paste", profileIds: z.array(z.string().regex(/^A\d+$/)).min(1).max(5).parse(choice.profileIds), reason: null, result: null };
+    case "cant_tell": return { status: "cant_tell", method: null, profileIds: [], reason: IDENTITY_NOT_CONFIRMED, result: "insufficient" };
+    case "reset": return { status: "needs_chair", method: null, profileIds: [], reason: null, result: null };
+  }
+}
+async function actorLabel(choice: LiveIdentityChoice): Promise<string> {
+  if (choice.kind === "orcid" || choice.kind === "orcid_insufficient") return "ORCID (automatic)";
+  const { data } = await supabase.auth.getUser();
+  return data.user?.email ?? "chair";
+}
+/** No reviewer check can start until the candidate is confirmed. */
+export function canStartLiveChecks(record: LiveCase): boolean { return record.candidateIdentity.status === "confirmed"; }
+/** Automatic ORCID confirmation applies only to a row nobody has touched yet. */
+export function shouldAutoApply(identity: LiveIdentity): boolean { return identity.status === "needs_chair" && !identity.confirmedAt; }
+
+export async function saveLiveCandidateIdentity(caseId: string, choice: LiveIdentityChoice): Promise<LiveCase> {
   identifier.parse(caseId);
-  const { error } = await supabase.from("cases").update({ candidate_confirmed_by: confirmedBy || null }).eq("id", caseId);
-  if (error) throw new Error("Couldn't save the confirmation. Try again.");
+  const columns = identityColumns(choice);
+  const { data, error } = await supabase.from("cases").update({ candidate_identity_status: columns.status, candidate_identity_method: columns.method, candidate_profile_ids: columns.profileIds, candidate_identity_reason: columns.reason, candidate_confirmed_by: await actorLabel(choice), candidate_confirmed_at: new Date().toISOString() }).eq("id", caseId).select().single();
+  if (error || !data) throw new Error("Couldn't save the candidate's identity. Try again.");
+  return mapLiveCase(data);
+}
+function mapScreeningName(row: { id: string; reviewer_id: string; identity_status: string; identity_method: string | null; profile_ids: string[]; confirmed_by: string | null; confirmed_at: string | null; reason: string | null; check_status: string; result: string | null }): LiveScreeningName {
+  return { id: row.id, reviewerId: row.reviewer_id, checkStatus: row.check_status, result: row.result, identity: { status: row.identity_status as LiveIdentityStatus, method: row.identity_method as LiveIdentityMethod | null, profileIds: row.profile_ids ?? [], confirmedBy: row.confirmed_by ?? "", confirmedAt: row.confirmed_at, reason: row.reason ?? "" } };
+}
+/** The case's current screening, with one identity row per proposed reviewer (created on first open). */
+export async function getLiveScreening(caseId: string): Promise<LiveScreening> {
+  identifier.parse(caseId);
+  const existing = await supabase.from("screenings").select("id").eq("case_id", caseId).order("started_at", { ascending: false }).limit(1).maybeSingle();
+  if (existing.error) throw new Error("Couldn't load the screening.");
+  let screeningId = existing.data?.id;
+  if (!screeningId) {
+    const created = await supabase.from("screenings").insert({ case_id: caseId }).select("id").single();
+    if (created.error || !created.data) throw new Error("Couldn't start the screening.");
+    screeningId = created.data.id;
+  }
+  const reviewers = await supabase.from("proposed_reviewers").select("id").eq("case_id", caseId);
+  if (reviewers.error) throw new Error("Couldn't load reviewers.");
+  if (reviewers.data.length) {
+    const added = await supabase.from("screening_names").upsert(reviewers.data.map(row => ({ screening_id: screeningId, reviewer_id: row.id })), { onConflict: "screening_id,reviewer_id", ignoreDuplicates: true });
+    if (added.error) throw new Error("Couldn't prepare the identity step.");
+  }
+  const names = await supabase.from("screening_names").select("*").eq("screening_id", screeningId);
+  if (names.error) throw new Error("Couldn't load the identity step.");
+  return { id: screeningId, names: names.data.map(mapScreeningName) };
+}
+export async function saveLiveReviewerIdentity(nameId: string, choice: LiveIdentityChoice): Promise<LiveScreeningName> {
+  identifier.parse(nameId);
+  const columns = identityColumns(choice);
+  const { data, error } = await supabase.from("screening_names").update({ identity_status: columns.status, identity_method: columns.method, profile_ids: columns.profileIds, reason: columns.reason, result: columns.result, confirmed_by: await actorLabel(choice), confirmed_at: new Date().toISOString() }).eq("id", nameId).select().single();
+  if (error || !data) throw new Error("Couldn't save this identity. Try again.");
+  return mapScreeningName(data);
+}
+/** Runs the server-side identify step. Throws only when the server can't be reached at all. */
+export async function identifyLive(input: { typedName: string; typedInstitution: string; typedOrcid?: string | null }): Promise<IdentifyResult> {
+  return identifyPerson({ data: input });
+}
+export async function resolveLiveLink(link: string): Promise<ResolveResult> {
+  return resolveProfileLink({ data: { link } });
 }

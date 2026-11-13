@@ -450,3 +450,12 @@
 .auth-submit:disabled { opacity: 0.6; cursor: default; }
 .auth-switch { margin-top: 16px; padding: 0; background: none; border: 0; color: var(--primary); font-size: 14px; cursor: pointer; }
 .auth-card .field-error { margin-top: 14px; }
+
+/* Live identity step (B3) */
+.live-identity { margin-top: 28px; }
+.live-identity h3 { margin: 18px 0 8px; font-size: 15px; font-weight: 500; }
+.identity-search-failed { display: flex; align-items: center; gap: 10px; color: var(--destructive); font-size: 14px; }
+.identity-search-failed svg { width: 16px; height: 16px; }
+.profile-match { display: block; margin-top: 6px; font-size: 12px; color: var(--muted-foreground); }
+.identity-resolved { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; }
+.identity-progress { font-size: 14px; color: var(--muted-foreground); }
