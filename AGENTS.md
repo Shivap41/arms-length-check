@@ -35,3 +35,4 @@ use the editor.
 - Keep all visual tokens and shell styles in src/styles.css and use design-system controls for actions so the reference styling stays consistent.
 - Keep case and screening data behind typed src/data/screeningService.ts functions with browser-only in-memory mutations and shared Zod validation; components must not import data directly.
 - Mount session-backed case content after hydration and use an unnested screening leaf so the full case page does not swallow the screening destination.
+- Keep fictional scenario fixtures in demoScenario.ts and expose cloned profiles and choice-driven outcomes only through screeningService.ts; loading replaces the demo roster and never performs identifier lookups.

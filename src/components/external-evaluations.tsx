@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Info, Plus, Trash2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addReviewers, canStartScreening, listReviewers, loadDemoReviewers, parseReviewerList, removeReviewer, reviewerSchema, setCandidateConfirmed, startScreening, type CaseRecord } from "@/data/screeningService";
+import { addReviewers, canStartScreening, getCase, listReviewers, loadDemoReviewers, parseReviewerList, removeReviewer, reviewerSchema, setCandidateConfirmed, startScreening, type CaseRecord } from "@/data/screeningService";
 
 export function ExternalEvaluations({ caseRecord }: { caseRecord: CaseRecord }) {
   const navigate = useNavigate();
@@ -16,6 +16,12 @@ export function ExternalEvaluations({ caseRecord }: { caseRecord: CaseRecord }) 
   const [unreadLines, setUnreadLines] = useState<ReturnType<typeof parseReviewerList>["errors"]>([]);
   const [notice, setNotice] = useState("");
   const refresh = () => setReviewers(listReviewers(caseRecord.id));
+  function loadDemo() {
+    const result = loadDemoReviewers(caseRecord.id);
+    refresh();
+    setConfirmed(getCase(caseRecord.id)?.candidateConfirmed ?? false);
+    setNotice(result.message);
+  }
   function addReviewer(event: React.FormEvent) {
     event.preventDefault();
     const result = reviewerSchema.safeParse(draft);
@@ -34,7 +40,7 @@ export function ExternalEvaluations({ caseRecord }: { caseRecord: CaseRecord }) 
     await navigate({ to: "/cases/$caseId/screening", params: { caseId: caseRecord.id }, search: { screeningId } });
   }
   return <div className="evaluations-layout"><section className="reviewer-workspace" aria-labelledby="reviewer-title">
-    <div className="reviewer-title-row"><h2 id="reviewer-title">Proposed external reviewers</h2><Button variant="outline" onClick={() => setNotice(loadDemoReviewers(caseRecord.id).message)}>Load demo list</Button></div>
+    <div className="reviewer-title-row"><h2 id="reviewer-title">Proposed external reviewers</h2><Button variant="outline" onClick={loadDemo}>Load demo list</Button></div>
     <div className="reviewer-table-scroll"><table className="reviewer-table"><thead><tr><th>Name</th><th>Institution</th><th>ORCID iD <span className="optional-label">(optional)</span></th><th><span className="sr-only">Remove</span></th></tr></thead><tbody>{reviewers.length ? reviewers.map(row => <tr key={row.id}><td>{row.name}</td><td>{row.institution}</td><td>{row.identity || "—"}</td><td><Button variant="ghost" size="icon" title={`Remove ${row.name}`} aria-label={`Remove ${row.name}`} onClick={() => { removeReviewer(caseRecord.id, row.id); refresh(); setNotice(`${row.name} removed.`); }}><Trash2 /></Button></td></tr>) : <tr><td colSpan={4} className="empty-reviewers">No reviewers proposed yet.</td></tr>}</tbody></table></div>
     <form className="reviewer-form" onSubmit={addReviewer} noValidate>
       <h3>Add reviewer</h3>
